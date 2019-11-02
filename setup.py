@@ -97,24 +97,24 @@ setuptools.setup(
     python_requires='>=3.5.3',
     classifiers=[
         'Development Status :: 4 - Beta',
-        'Environment :: Console'
-        'Environment :: Web Environment'
-        'Intended Audience :: Developers'
-        'Intended Audience :: End Users/Desktop'
-        'License :: OSI Approved :: GNU Affero General Public License v3'
-        'Operating System :: OS Independent'
+        'Environment :: Console',
+        'Environment :: Web Environment',
+        'Intended Audience :: Developers',
+        'Intended Audience :: End Users/Desktop',
+        'License :: OSI Approved :: GNU Affero General Public License v3',
+        'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3 :: Only'
-        'Topic :: Internet'
+        'Programming Language :: Python :: 3 :: Only',
+        'Topic :: Internet',
         'Topic :: Internet :: WWW/HTTP',
-        'Topic :: Multimedia'
-        'Topic :: Multimedia :: Sound/Audio'
+        'Topic :: Multimedia',
+        'Topic :: Multimedia :: Sound/Audio',
         'Topic :: Software Development',
         'Topic :: Terminals',
-        'Topic :: Utilities'
+        'Topic :: Utilities',
     ],
     cmdclass={
         "test": TestCommand,
