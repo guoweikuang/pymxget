@@ -2,7 +2,7 @@
 
 **[mxget](https://github.com/winterssy/mxget)** 的Python实现，优雅地下载你喜欢的音乐。
 
-[![Actions Status](https://github.com/winterssy/pymxget/workflows/Publish%20Docker/badge.svg)](https://github.com/winterssy/pymxget/actions)
+[![Actions Status](https://github.com/winterssy/pymxget/workflows/Publish%20Docker/badge.svg)](https://github.com/winterssy/pymxget/actions) [![Python Version](https://img.shields.io/pypi/pyversions/mxget.svg)](https://github.com/winterssy/pymxget) [![License](https://img.shields.io/github/license/winterssy/pymxget.svg)](LICENSE)
 
 ## 功能特性
 
