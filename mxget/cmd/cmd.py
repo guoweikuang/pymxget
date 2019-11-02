@@ -22,7 +22,7 @@ def _get_platform_id(platform_flag: str = None) -> typing.Optional[int]:
     if platform_flag is None:
         platform_id = conf.settings['music_platform']
     else:
-        platform_id = conf.get_platform_id(platform_flag)
+        platform_id = conf.get_platform(platform_flag)
         if platform_id is None:
             return None
     return platform_id
@@ -48,10 +48,16 @@ please visit https://github.com/winterssy/pymxget for more detail."""
 @click.option('--cwd', help='Specify the default download directory')
 def config(platform_flag: str, cwd: str) -> None:
     if platform_flag is None and cwd is None:
+        print("""
+Current settings:
+    download dir -> {}
+    music platform -> {} [{}]
+""".format(conf.settings['download_dir'], conf.settings['music_platform'],
+           conf.get_site(conf.settings['music_platform'])), end='')
         return
 
     if platform_flag is not None:
-        platform_id = conf.get_platform_id(platform_flag)
+        platform_id = conf.get_platform(platform_flag)
         if platform_id is None:
             logging.critical('Unexpected music platform: "{}"'.format(platform_flag))
             sys.exit(1)
@@ -77,7 +83,7 @@ def search(platform_flag, keyword) -> None:
         logging.critical('Unexpected music platform: "{}"'.format(platform_flag))
         sys.exit(1)
 
-    client = conf.get_platform_client(platform_id)
+    client = conf.get_client(platform_id)
     loop = asyncio.get_event_loop()
     try:
         resp = loop.run_until_complete(client.search_song(keyword))
@@ -106,10 +112,10 @@ def song(platform_flag: str, song_id: str, **kwargs) -> None:
         sys.exit(1)
 
     conf.settings.update(kwargs)
-    client = conf.get_platform_client(platform_id)
+    client = conf.get_client(platform_id)
     loop = asyncio.get_event_loop()
     try:
-        logging.info('Fetch song {} from {}'.format(song_id, conf.get_platform_site(platform_id)))
+        logging.info('Fetch song {} from {}'.format(song_id, conf.get_site(platform_id)))
         resp = loop.run_until_complete(client.get_song(song_id))
         loop.run_until_complete(cli.concurrent_download(client, '.', resp))
     except exceptions.ClientError as e:
@@ -132,10 +138,10 @@ def artist(platform_flag: str, artist_id: str, **kwargs) -> None:
         sys.exit(1)
 
     conf.settings.update(kwargs)
-    client = conf.get_platform_client(platform_id)
+    client = conf.get_client(platform_id)
     loop = asyncio.get_event_loop()
     try:
-        logging.info('Fetch artist {} from {}'.format(artist_id, conf.get_platform_site(platform_id)))
+        logging.info('Fetch artist {} from {}'.format(artist_id, conf.get_site(platform_id)))
         resp = loop.run_until_complete(client.get_artist(artist_id))
         loop.run_until_complete(cli.concurrent_download(client, resp.name, *resp.songs))
     except exceptions.ClientError as e:
@@ -158,10 +164,10 @@ def album(platform_flag: str, album_id: str, **kwargs) -> None:
         sys.exit(1)
 
     conf.settings.update(kwargs)
-    client = conf.get_platform_client(platform_id)
+    client = conf.get_client(platform_id)
     loop = asyncio.get_event_loop()
     try:
-        logging.info('Fetch album {} from {}'.format(album_id, conf.get_platform_site(platform_id)))
+        logging.info('Fetch album {} from {}'.format(album_id, conf.get_site(platform_id)))
         resp = loop.run_until_complete(client.get_album(album_id))
         loop.run_until_complete(cli.concurrent_download(client, resp.name, *resp.songs))
     except exceptions.ClientError as e:
@@ -184,10 +190,10 @@ def playlist(platform_flag: str, playlist_id: str, **kwargs) -> None:
         sys.exit(1)
 
     conf.settings.update(kwargs)
-    client = conf.get_platform_client(platform_id)
+    client = conf.get_client(platform_id)
     loop = asyncio.get_event_loop()
     try:
-        logging.info('Fetch playlist {} from {}'.format(playlist_id, conf.get_platform_site(platform_id)))
+        logging.info('Fetch playlist {} from {}'.format(playlist_id, conf.get_site(platform_id)))
         resp = loop.run_until_complete(client.get_playlist(playlist_id))
         loop.run_until_complete(cli.concurrent_download(client, resp.name, *resp.songs))
     except exceptions.ClientError as e:

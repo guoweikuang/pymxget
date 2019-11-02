@@ -58,16 +58,16 @@ def _get_user_dir_path() -> pathlib.Path:
     return user_dir
 
 
-def get_platform_id(platform_flag: str) -> typing.Optional[int]:
+def get_platform(platform_flag: str) -> typing.Optional[int]:
     return _PLATFORM_IDS.get(platform_flag)
 
 
-def get_platform_client(platform_id: int) -> typing.Optional[api.API]:
+def get_client(platform_id: int) -> typing.Optional[api.API]:
     client = _PLATFORM_CLIENTS.get(platform_id)
     return client() if client is not None else None
 
 
-def get_platform_site(platform_id: int) -> typing.Optional[str]:
+def get_site(platform_id: int) -> typing.Optional[str]:
     return _PLATFORM_SITES.get(platform_id)
 
 
@@ -90,7 +90,7 @@ class Settings(dict):
             raise exceptions.ClientError("Can't load settings from file: {}".format(e))
 
         platform_id = self.get('music_platform')
-        if get_platform_site(platform_id) is None:
+        if get_site(platform_id) is None:
             self['music_platform'] = _DEFAULT_SETTINGS['music_platform']
             raise exceptions.ClientError('Unexpected music platform: "{}"'.format(platform_id))
 
