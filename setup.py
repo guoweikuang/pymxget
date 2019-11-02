@@ -1,12 +1,6 @@
-import os
-import shutil
-import sys
-
 import setuptools
 
 import mxget
-
-here = os.path.abspath(os.path.dirname(__file__))
 
 required = [
     'aiofiles',
@@ -15,62 +9,6 @@ required = [
     'cryptography',
     'mutagen',
 ]
-
-
-class TestCommand(setuptools.Command):
-    """Support setup.py test."""
-
-    description = 'Run unit tests.'
-    user_options = []
-
-    @staticmethod
-    def status(msg):
-        """Prints things in bold."""
-        print('\033[1m{0}\033[0m'.format(msg))
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        self.status('Running unit tests…')
-        os.system('{} -m unittest discover -s {} -v'.format(sys.executable, os.path.join(here, "tests")))
-        sys.exit(0)
-
-
-class PublishCommand(setuptools.Command):
-    """Support setup.py publish."""
-
-    description = 'Build and publish the package.'
-    user_options = []
-
-    @staticmethod
-    def status(msg):
-        """Prints things in bold."""
-        print('\033[1m{0}\033[0m'.format(msg))
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        try:
-            self.status('Removing previous builds…')
-            shutil.rmtree(os.path.join(here, "dist"))
-        except FileNotFoundError:
-            pass
-        self.status('Building Source distribution…')
-        os.system('{} setup.py sdist bdist_wheel'.format(sys.executable))
-        self.status("Uploading the package to PyPI via Twine…")
-        os.system("twine upload dist/*")
-        self.status("Pushing git tags…")
-        os.system("git tag v{0}".format(mxget.__version__))
-        os.system("git push --tags")
-        sys.exit(0)
 
 
 def long_description():
@@ -116,8 +54,4 @@ setuptools.setup(
         'Topic :: Terminals',
         'Topic :: Utilities',
     ],
-    cmdclass={
-        "test": TestCommand,
-        "publish": PublishCommand,
-    },
 )
