@@ -10,7 +10,7 @@ RUN set -ex && \
     pip3 install pipenv && \
     pipenv lock --requirements > requirements.txt && \
     mkdir /install/ && \
-    pip3 install --prefix /install/ -r requirements.txt
+    pip3 install --prefix /install/ -r requirements.txt gunicorn
 
 FROM alpine as runtime
 
