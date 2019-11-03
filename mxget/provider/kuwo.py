@@ -44,9 +44,9 @@ def _resolve(*songs: dict) -> typing.List[api.Song]:
             name=song['name'].strip(),
             artist=song['artist'].replace('&', '/').strip(),
             album=song.get('album', '').strip(),
-            pic_url=song.get('albumpic', ''),
-            lyric=song.get('lyric', ''),
-            url=song.get('url', ''),
+            pic_url=song.get('albumpic'),
+            lyric=song.get('lyric'),
+            url=song.get('url'),
         ) for song in songs
     ]
 
@@ -222,8 +222,7 @@ class KuWo(api.API):
 
         async def worker(song: dict):
             async with sem:
-                url = await self.get_song_url(song['rid'])
-                song['url'] = url if url is not None else ''
+                song['url'] = await self.get_song_url(song['rid'])
 
         tasks = [asyncio.ensure_future(worker(song)) for song in songs]
         await asyncio.gather(*tasks)
@@ -233,8 +232,7 @@ class KuWo(api.API):
 
         async def worker(song: dict):
             async with sem:
-                lyric = await self.get_song_lyric(song['rid'])
-                song['lyric'] = lyric if lyric is not None else ''
+                song['lyric'] = await self.get_song_lyric(song['rid'])
 
         tasks = [asyncio.ensure_future(worker(song)) for song in songs]
         await asyncio.gather(*tasks)

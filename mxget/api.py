@@ -49,10 +49,10 @@ class Song:
         self.name = name
         self.artist = artist
         self.album = album
-        self.pic_url = pic_url
-        self.lyric = lyric
-        self.url = url
-        self.playable = url != ''
+        self.pic_url = pic_url if pic_url is not None else ''
+        self.lyric = lyric if lyric is not None else ''
+        self.url = url if url is not None else ''
+        self.playable = self.url != ''
 
     def serialize(self):
         data = {

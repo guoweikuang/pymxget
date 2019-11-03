@@ -40,8 +40,8 @@ def _resolve(*songs: dict) -> typing.List[api.Song]:
             artist=song['choricSinger'].replace('、', '/').strip(),
             album=song.get('album_name', '').strip(),
             pic_url=song['album_img'].replace('{size}', '480'),
-            lyric=song.get('lyric', ''),
-            url=song.get('url', ''),
+            lyric=song.get('lyric'),
+            url=song.get('url'),
         ) for song in songs if song.get('songName') is not None
     ]
 
@@ -207,8 +207,7 @@ class KuGou(api.API):
 
         async def worker(song: dict):
             async with sem:
-                url = await self.get_song_url(song['hash'])
-                song['url'] = url if url is not None else ''
+                song['url'] = await self.get_song_url(song['hash'])
 
         tasks = [asyncio.ensure_future(worker(song)) for song in songs]
         await asyncio.gather(*tasks)
@@ -218,8 +217,7 @@ class KuGou(api.API):
 
         async def worker(song: dict):
             async with sem:
-                lyric = await self.get_song_lyric(song['hash'])
-                song['lyric'] = lyric if lyric is not None else ''
+                song['lyric'] = await self.get_song_lyric(song['hash'])
 
         tasks = [asyncio.ensure_future(worker(song)) for song in songs]
         await asyncio.gather(*tasks)
@@ -231,9 +229,9 @@ class KuGou(api.API):
             async with sem:
                 try:
                     resp = await self.get_album_info_raw(song['albumid'])
-                except (exceptions.RequestError, exceptions.ResponseError):
-                    return
-                song['album_name'] = resp['data']['albumname']
+                    song['album_name'] = resp['data']['albumname']
+                except (exceptions.RequestError, exceptions.ResponseError, KeyError):
+                    pass
 
         tasks = [asyncio.ensure_future(worker(song)) for song in songs if song.get('albumid', 0) != 0]
         await asyncio.gather(*tasks)

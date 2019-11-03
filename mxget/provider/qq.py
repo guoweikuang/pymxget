@@ -42,8 +42,8 @@ def _resolve(*songs: dict) -> typing.List[api.Song]:
             artist='/'.join([s['name'].strip() for s in song['singer']]),
             album=song['album']['name'].strip(),
             pic_url=_ALBUM_PIC_URL.format(album_mid=song['album']['mid']),
-            lyric=song.get('lyric', ''),
-            url=song.get('url', ''),
+            lyric=song.get('lyric'),
+            url=song.get('url'),
         ) for song in songs
     ]
 
@@ -205,8 +205,7 @@ class QQ(api.API):
 
         async def worker(song: dict):
             async with sem:
-                url = await self.get_song_url(song['mid'], song['file']['media_mid'])
-                song['url'] = url if url is not None else ''
+                song['url'] = await self.get_song_url(song['mid'], song['file']['media_mid'])
 
         tasks = [asyncio.ensure_future(worker(song)) for song in songs]
         await asyncio.gather(*tasks)
@@ -216,8 +215,7 @@ class QQ(api.API):
 
         async def worker(song: dict):
             async with sem:
-                lyric = await self.get_song_lyric(song['mid'])
-                song['lyric'] = lyric if lyric is not None else ''
+                song['lyric'] = await self.get_song_lyric(song['mid'])
 
         tasks = [asyncio.ensure_future(worker(song)) for song in songs]
         await asyncio.gather(*tasks)

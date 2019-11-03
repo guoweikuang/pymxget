@@ -109,8 +109,8 @@ def _resolve(*songs: dict) -> typing.List[api.Song]:
             artist='/'.join([a['name'].strip() for a in song['ar']]),
             album=song['al']['name'].strip(),
             pic_url=song['al']['picUrl'],
-            lyric=song.get('lyric', ''),
-            url=song.get('url', ''),
+            lyric=song.get('lyric'),
+            url=song.get('url'),
         ) for song in songs
     ]
 
@@ -276,24 +276,23 @@ class NetEase(api.API):
     async def _patch_song_url(self, *songs: dict) -> None:
         song_ids = [s['id'] for s in songs]
         resp = await self.get_song_url_raw(*song_ids)
-        if not resp['data']:
+        if resp.get('data') is None:
             return
 
         url_map = dict()
         for i in resp['data']:
-            if i.get('url') is not None and i['url']:
+            if i.get('code') == 200:
                 url_map[i['id']] = i['url']
 
         for s in songs:
-            s['url'] = url_map.get(s['id'], '')
+            s['url'] = url_map.get(s['id'])
 
     async def _patch_song_lyric(self, *songs: dict) -> None:
         sem = asyncio.Semaphore(32)
 
         async def worker(song: dict):
             async with sem:
-                lyric = await self.get_song_lyric(song['id'])
-                song['lyric'] = lyric if lyric is not None else ''
+                song['lyric'] = await self.get_song_lyric(song['id'])
 
         tasks = [asyncio.ensure_future(worker(song)) for song in songs]
         await asyncio.gather(*tasks)

@@ -72,9 +72,9 @@ def _resolve(*songs: dict) -> typing.List[api.Song]:
             name=song['songName'].strip(),
             artist=song['singer'].replace('|', '/').strip(),
             album=song.get('album', '').strip(),
-            pic_url=song.get('pic_url', ''),
-            lyric=song.get('lyric', ''),
-            url=song.get('url', ''),
+            pic_url=song.get('pic_url'),
+            lyric=song.get('lyric'),
+            url=song.get('url'),
         ) for song in songs
     ]
 
@@ -301,10 +301,9 @@ class MiGu(api.API):
                     return
                 try:
                     resp = await self.request('GET', lrc_url)
-                    lyric = await resp.text()
+                    song['lyric'] = await resp.text()
                 except (aiohttp.ClientError, aiohttp.ClientResponseError):
-                    return
-                song['lyric'] = lyric
+                    pass
 
         tasks = [asyncio.ensure_future(worker(song)) for song in songs]
         await asyncio.gather(*tasks)
