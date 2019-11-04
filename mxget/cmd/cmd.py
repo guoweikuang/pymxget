@@ -88,7 +88,7 @@ def search(platform_flag, keyword) -> None:
     try:
         resp = loop.run_until_complete(client.search_song(keyword))
         for i, v in enumerate(resp.songs):
-            print('[{:02d}] {} - {} - {} - {}'.format(i + 1, v.name, v.artist, v.album, v.id))
+            print('[{:02d}] {} - {} - {}'.format(i + 1, v.name, v.artist, v.id))
         if platform_flag is None:
             print('\nCommand: mxget song --id [id]')
         else:
