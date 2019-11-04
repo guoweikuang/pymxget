@@ -38,7 +38,7 @@ please visit https://github.com/winterssy/pymxget for more detail."""
     try:
         conf.settings.init()
     except exceptions.ClientError as e:
-        logging.critical('Failed to initialize client, reset to defaults: {}'.format(e))
+        logging.critical("Can't initialize settings, reset to defaults: {}".format(e))
         conf.settings.reset()
         sys.exit(1)
 
