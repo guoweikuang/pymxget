@@ -1,5 +1,4 @@
 import asyncio
-import base64
 import json
 import typing
 
@@ -24,7 +23,7 @@ _SEARCH_API = 'https://c.y.qq.com/soso/fcgi-bin/client_search_cp?format=json&pla
 _GET_SONG_API = 'https://c.y.qq.com/v8/fcg-bin/fcg_play_single_song.fcg?format=json&platform=yqq'
 _GET_SONG_URL_API = 'http://c.y.qq.com/base/fcgi-bin/fcg_music_express_mobile3.fcg?' \
                     'format=json&platform=yqq&needNewCode=0&cid=205361747&uin=0&guid=0'
-_GET_SONG_LYRIC_API = 'https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg?format=json&platform=yqq'
+_GET_SONG_LYRIC_API = 'https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg?format=json&platform=yqq&nobase64=1'
 _GET_ARTIST_API = 'https://c.y.qq.com/v8/fcg-bin/fcg_v8_singer_track_cp.fcg?' \
                   'format=json&platform=yqq&newsong=1&order=listen'
 _GET_ALBUM_API = 'https://c.y.qq.com/v8/fcg-bin/fcg_v8_album_detail_cp.fcg?format=json&platform=yqq&newsong=1'
@@ -179,7 +178,7 @@ class QQ(api.API):
         except (exceptions.RequestError, exceptions.ResponseError, KeyError):
             return None
 
-        return base64.b64decode(lyric).decode('utf-8')
+        return lyric
 
     async def get_song_lyric_raw(self, song_mid: str):
         params = {
