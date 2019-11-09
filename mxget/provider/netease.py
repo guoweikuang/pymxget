@@ -37,8 +37,8 @@ _DEFAULT_RSA_PUBLIC_KEY_EXPONENT = 0x10001
 
 _API_LINUX = 'https://music.163.com/api/linux/forward'
 _API_SEARCH = 'https://music.163.com/weapi/search/get'
-_API_GET_SONG = 'https://music.163.com/weapi/v3/song/detail'
-_API_GET_SONG_URL = 'https://music.163.com/weapi/song/enhance/player/url'
+_API_GET_SONGS = 'https://music.163.com/weapi/v3/song/detail'
+_API_GET_SONGS_URL = 'https://music.163.com/weapi/song/enhance/player/url'
 _API_GET_ARTIST = 'https://music.163.com/weapi/v1/artist/{artist_id}'
 _API_GET_ALBUM = 'https://music.163.com/weapi/v1/album/{album_id}'
 _API_GET_PLAYLIST = 'https://music.163.com/weapi/v3/playlist/detail'
@@ -179,7 +179,7 @@ class NetEase(api.API):
         return resp
 
     async def get_song(self, song_id: typing.Union[int, str]) -> api.Song:
-        resp = await self.get_song_raw(song_id)
+        resp = await self.get_songs_raw(song_id)
         try:
             _song = resp['songs'][0]
         except (KeyError, IndexError):
@@ -190,7 +190,7 @@ class NetEase(api.API):
         songs = _resolve(_song)
         return songs[0]
 
-    async def get_song_raw(self, *song_ids: typing.Union[int, str]) -> dict:
+    async def get_songs_raw(self, *song_ids: typing.Union[int, str]) -> dict:
         if len(song_ids) > _SONG_REQUEST_LIMIT:
             song_ids = song_ids[:_SONG_REQUEST_LIMIT]
 
@@ -200,21 +200,21 @@ class NetEase(api.API):
         }
 
         try:
-            _resp = await self.request('POST', _API_GET_SONG, data=_weapi(data))
+            _resp = await self.request('POST', _API_GET_SONGS, data=_weapi(data))
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            raise exceptions.RequestError('get song: {}'.format(e))
+            raise exceptions.RequestError('get songs: {}'.format(e))
 
         try:
             resp = await _resp.json(content_type=None)
             if resp['code'] != 200:
                 raise exceptions.ResponseError('get songs: {}'.format(resp['msg']))
         except (aiohttp.ClientResponseError, json.JSONDecodeError, KeyError) as e:
-            raise exceptions.ResponseError('get song: {}'.format(e))
+            raise exceptions.ResponseError('get songs: {}'.format(e))
 
         return resp
 
     async def get_song_url(self, song_id: typing.Union[int, str], br: int = 128) -> typing.Optional[str]:
-        resp = await self.get_song_url_raw(song_id, br=br)
+        resp = await self.get_songs_url_raw(song_id, br=br)
         try:
             url = resp['data'][0]['url']
         except (KeyError, IndexError):
@@ -222,23 +222,23 @@ class NetEase(api.API):
 
         return url if url else None
 
-    async def get_song_url_raw(self, *song_ids: typing.Union[int, str], br: int = 128) -> dict:
+    async def get_songs_url_raw(self, *song_ids: typing.Union[int, str], br: int = 128) -> dict:
         data = {
             'br': _bit_rate(br),
             'ids': json.dumps(song_ids),
         }
 
         try:
-            _resp = await self.request('POST', _API_GET_SONG_URL, data=_weapi(data))
+            _resp = await self.request('POST', _API_GET_SONGS_URL, data=_weapi(data))
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            raise exceptions.RequestError('get song url: {}'.format(e))
+            raise exceptions.RequestError('get songs url: {}'.format(e))
 
         try:
             resp = await _resp.json(content_type=None)
             if resp['code'] != 200:
-                raise exceptions.ResponseError('get song url: {}'.format(resp['msg']))
+                raise exceptions.ResponseError('get songs url: {}'.format(resp['msg']))
         except (aiohttp.ClientResponseError, json.JSONDecodeError, KeyError) as e:
-            raise exceptions.ResponseError('get song url: {}'.format(e))
+            raise exceptions.ResponseError('get songs url: {}'.format(e))
 
         return resp
 
@@ -275,7 +275,7 @@ class NetEase(api.API):
 
     async def _patch_song_url(self, *songs: dict) -> None:
         song_ids = [s['id'] for s in songs]
-        resp = await self.get_song_url_raw(*song_ids)
+        resp = await self.get_songs_url_raw(*song_ids)
         if resp.get('data') is None:
             return
 
@@ -381,7 +381,7 @@ class NetEase(api.API):
 
         if total > _SONG_REQUEST_LIMIT:
             async def patch_tracks(*args: typing.Union[int, str]):
-                return await self.get_song_raw(*args)
+                return await self.get_songs_raw(*args)
 
             tasks = []
             for i in range(_SONG_REQUEST_LIMIT, total, _SONG_REQUEST_LIMIT):
