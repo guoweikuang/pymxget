@@ -1,6 +1,6 @@
 # pymxget
 
-**[mxget](https://github.com/winterssy/mxget)** 的Python实现，同步上游更新。
+**[mxget](https://github.com/winterssy/mxget)** 的Python实现，~~同步上游更新~~。
 
 [![Actions Status](https://github.com/winterssy/pymxget/workflows/Publish%20Docker/badge.svg)](https://github.com/winterssy/pymxget/actions) [![Python Version](https://img.shields.io/pypi/pyversions/mxget.svg)](https://github.com/winterssy/pymxget) [![License](https://img.shields.io/github/license/winterssy/pymxget.svg)](LICENSE)
 
