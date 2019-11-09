@@ -10,7 +10,7 @@ from mxget import (
 )
 
 __all__ = [
-    'search_song',
+    'search_songs',
     'get_song',
     'get_artist',
     'get_album',
@@ -19,15 +19,15 @@ __all__ = [
     'get_song_lyric',
 ]
 
-_SEARCH_API = 'https://c.y.qq.com/soso/fcgi-bin/client_search_cp?format=json&platform=yqq&new_json=1'
-_GET_SONG_API = 'https://c.y.qq.com/v8/fcg-bin/fcg_play_single_song.fcg?format=json&platform=yqq'
-_GET_SONG_URL_API = 'http://c.y.qq.com/base/fcgi-bin/fcg_music_express_mobile3.fcg?' \
+_API_SEARCH = 'https://c.y.qq.com/soso/fcgi-bin/client_search_cp?format=json&platform=yqq&new_json=1'
+_API_GET_SONG = 'https://c.y.qq.com/v8/fcg-bin/fcg_play_single_song.fcg?format=json&platform=yqq'
+_API_GET_SONG_URL = 'http://c.y.qq.com/base/fcgi-bin/fcg_music_express_mobile3.fcg?' \
                     'format=json&platform=yqq&needNewCode=0&cid=205361747&uin=0&guid=0'
-_GET_SONG_LYRIC_API = 'https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg?format=json&platform=yqq&nobase64=1'
-_GET_ARTIST_API = 'https://c.y.qq.com/v8/fcg-bin/fcg_v8_singer_track_cp.fcg?' \
+_API_GET_SONG_LYRIC = 'https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg?format=json&platform=yqq&nobase64=1'
+_API_GET_ARTIST = 'https://c.y.qq.com/v8/fcg-bin/fcg_v8_singer_track_cp.fcg?' \
                   'format=json&platform=yqq&newsong=1&order=listen'
-_GET_ALBUM_API = 'https://c.y.qq.com/v8/fcg-bin/fcg_v8_album_detail_cp.fcg?format=json&platform=yqq&newsong=1'
-_GET_PLAYLIST_API = 'https://c.y.qq.com/v8/fcg-bin/fcg_v8_playlist_cp.fcg?format=json&platform=yqq&newsong=1'
+_API_GET_ALBUM = 'https://c.y.qq.com/v8/fcg-bin/fcg_v8_album_detail_cp.fcg?format=json&platform=yqq&newsong=1'
+_API_GET_PLAYLIST = 'https://c.y.qq.com/v8/fcg-bin/fcg_v8_playlist_cp.fcg?format=json&platform=yqq&newsong=1'
 
 _SONG_URL = 'http://mobileoc.music.tc.qq.com/{filename}?guid=0&uin=0&vkey={vkey}'
 _ARTIST_PIC_URL = 'https://y.gtimg.cn/music/photo_new/T001R800x800M000{singer_mid}.jpg'
@@ -64,30 +64,30 @@ class QQ(api.API):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.close()
 
-    def platform(self) -> int:
-        return 1001
+    def platform(self) -> api.Platform:
+        return api.Platform.QQ
 
-    async def search_song(self, keyword: str) -> api.SearchResult:
-        resp = await self.search_song_raw(keyword)
+    async def search_songs(self, keyword: str) -> api.SearchSongsResult:
+        resp = await self.search_songs_raw(keyword)
         try:
             _songs = resp['data']['song']['list']
         except KeyError:
-            raise exceptions.DataError('search song: no data')
+            raise exceptions.DataError('search songs: no data')
 
         if not _songs:
-            raise exceptions.DataError('search song: no data')
+            raise exceptions.DataError('search songs: no data')
 
         songs = [
-            api.SearchSongData(
+            api.SearchSongsData(
                 song_id=_song['mid'],
                 name=_song['title'].strip(),
                 artist='/'.join([s['name'].strip() for s in _song['singer']]),
                 album=_song['album']['name'].strip(),
             ) for _song in _songs
         ]
-        return api.SearchResult(keyword=keyword, count=len(songs), songs=songs)
+        return api.SearchSongsResult(keyword=keyword, count=len(songs), songs=songs)
 
-    async def search_song_raw(self, keyword: str, page: int = 1, page_size: int = 50) -> dict:
+    async def search_songs_raw(self, keyword: str, page: int = 1, page_size: int = 50) -> dict:
         params = {
             'w': keyword,
             'p': page,
@@ -95,16 +95,16 @@ class QQ(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _SEARCH_API, params=params)
+            _resp = await self.request('GET', _API_SEARCH, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            raise exceptions.RequestError('search song: {}'.format(e))
+            raise exceptions.RequestError('search songs: {}'.format(e))
 
         try:
             resp = await _resp.json(content_type=None)
             if resp['code'] != 0:
-                raise exceptions.ResponseError('search song: {}'.format(resp['code']))
+                raise exceptions.ResponseError('search songs: {}'.format(resp['code']))
         except (aiohttp.ClientResponseError, json.JSONDecodeError, KeyError) as e:
-            raise exceptions.ResponseError('search song: {}'.format(e))
+            raise exceptions.ResponseError('search songs: {}'.format(e))
 
         return resp
 
@@ -126,7 +126,7 @@ class QQ(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _GET_SONG_API, params=params)
+            _resp = await self.request('GET', _API_GET_SONG, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get song: {}'.format(e))
 
@@ -158,7 +158,7 @@ class QQ(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _GET_SONG_URL_API, params=params)
+            _resp = await self.request('GET', _API_GET_SONG_URL, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get song url: {}'.format(e))
 
@@ -186,7 +186,7 @@ class QQ(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _GET_SONG_LYRIC_API, params=params)
+            _resp = await self.request('GET', _API_GET_SONG_LYRIC, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get song lyric: {}'.format(e))
 
@@ -249,7 +249,7 @@ class QQ(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _GET_ARTIST_API, params=params)
+            _resp = await self.request('GET', _API_GET_ARTIST, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get artist: {}'.format(e))
 
@@ -289,7 +289,7 @@ class QQ(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _GET_ALBUM_API, params=params)
+            _resp = await self.request('GET', _API_GET_ALBUM, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get album: {}'.format(e))
 
@@ -329,7 +329,7 @@ class QQ(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _GET_PLAYLIST_API, params=params)
+            _resp = await self.request('GET', _API_GET_PLAYLIST, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get playlist: {}'.format(e))
 
@@ -356,9 +356,9 @@ class QQ(api.API):
         return await self._session.request(method, url, **kwargs)
 
 
-async def search_song(keyword: str) -> api.SearchResult:
+async def search_songs(keyword: str) -> api.SearchSongsResult:
     async with QQ() as client:
-        return await client.search_song(keyword)
+        return await client.search_songs(keyword)
 
 
 async def get_song(song_mid: str) -> api.Song:

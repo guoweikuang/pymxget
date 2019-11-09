@@ -9,7 +9,7 @@ class TestKuGou(unittest.TestCase):
         self.loop = asyncio.get_event_loop()
 
     def test_search_song(self):
-        resp = self.loop.run_until_complete(kugou.search_song('五月天'))
+        resp = self.loop.run_until_complete(kugou.search_songs('五月天'))
         self.assertIsNotNone(resp)
 
     def test_get_song(self):

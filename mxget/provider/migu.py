@@ -10,24 +10,24 @@ from mxget import (
 )
 
 __all__ = [
-    'search_song',
+    'search_songs',
     'get_song',
     'get_artist',
     'get_album',
     'get_playlist',
 ]
 
-_SEARCH_API = 'https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/search_all.do?isCopyright=1&isCorrect=1'
-_GET_SONG_ID_API = 'http://music.migu.cn/v3/api/music/audioPlayer/songs?type=1'
-_GET_SONG_API = 'https://app.c.nf.migu.cn/MIGUM2.0/v2.0/content/querySongBySongId.do?contentId=0'
-_GET_SONG_URL_API = 'https://app.c.nf.migu.cn/MIGUM2.0/v2.0/content/listen-url?copyrightId=0&netType=01&toneFlag=HQ'
-_GET_SONG_PIC_API = 'http://music.migu.cn/v3/api/music/audioPlayer/getSongPic'
-_GET_SONG_LYRIC_API = 'http://music.migu.cn/v3/api/music/audioPlayer/getLyric'
-_GET_ARTIST_INFO_API = 'https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/resourceinfo.do?' \
+_API_SEARCH = 'https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/search_all.do?isCopyright=1&isCorrect=1'
+_API_GET_SONG_ID = 'http://music.migu.cn/v3/api/music/audioPlayer/songs?type=1'
+_API_GET_SONG = 'https://app.c.nf.migu.cn/MIGUM2.0/v2.0/content/querySongBySongId.do?contentId=0'
+_API_GET_SONG_URL = 'https://app.c.nf.migu.cn/MIGUM2.0/v2.0/content/listen-url?copyrightId=0&netType=01&toneFlag=HQ'
+_API_GET_SONG_PIC = 'http://music.migu.cn/v3/api/music/audioPlayer/getSongPic'
+_API_GET_SONG_LYRIC = 'http://music.migu.cn/v3/api/music/audioPlayer/getLyric'
+_API_GET_ARTIST_INFO = 'https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/resourceinfo.do?' \
                        'needSimple=01&resourceType=2002'
-_GET_ARTIST_SONG_API = 'https://app.c.nf.migu.cn/MIGUM3.0/v1.0/template/singerSongs/release?templateVersion=2'
-_GET_ALBUM_API = 'https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/resourceinfo.do?needSimple=01&resourceType=2003'
-_GET_PLAYLIST_API = 'https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/resourceinfo.do?needSimple=01&resourceType=2021'
+_API_GET_ARTIST_SONGS = 'https://app.c.nf.migu.cn/MIGUM3.0/v1.0/template/singerSongs/release?templateVersion=2'
+_API_GET_ALBUM = 'https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/resourceinfo.do?needSimple=01&resourceType=2003'
+_API_GET_PLAYLIST = 'https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/resourceinfo.do?needSimple=01&resourceType=2021'
 
 _SONG_URL = "https://app.pd.nf.migu.cn/MIGUM2.0/v1.0/content/sub/listenSong.do?contentId={content_id}" \
             "&copyrightId=0&netType=01&resourceType={resource_type}&toneFlag={tone_flag}&channel=0"
@@ -96,30 +96,30 @@ class MiGu(api.API):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.close()
 
-    def platform(self) -> int:
-        return 1002
+    def platform(self) -> api.Platform:
+        return api.Platform.MiGu
 
-    async def search_song(self, keyword: str) -> api.SearchResult:
-        resp = await self.search_song_raw(keyword)
+    async def search_songs(self, keyword: str) -> api.SearchSongsResult:
+        resp = await self.search_songs_raw(keyword)
         try:
             _songs = resp['songResultData']['result']
         except KeyError:
-            raise exceptions.DataError('search song: no data')
+            raise exceptions.DataError('search songs: no data')
 
         if not _songs:
-            raise exceptions.DataError('search song: no data')
+            raise exceptions.DataError('search songs: no data')
 
         songs = [
-            api.SearchSongData(
+            api.SearchSongsData(
                 song_id=_song['copyrightId'],
                 name=_song['name'].strip(),
                 artist='/'.join([s['name'].strip() for s in _song['singers']]),
                 album='/'.join([a['name'].strip() for a in _song['albums']])
             ) for _song in _songs
         ]
-        return api.SearchResult(keyword=keyword, count=len(songs), songs=songs)
+        return api.SearchSongsResult(keyword=keyword, count=len(songs), songs=songs)
 
-    async def search_song_raw(self, keyword: str, page: int = 1, page_size: int = 50) -> dict:
+    async def search_songs_raw(self, keyword: str, page: int = 1, page_size: int = 50) -> dict:
         switch_option = {
             'song': 1,
             'album': 0,
@@ -137,16 +137,16 @@ class MiGu(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _SEARCH_API, params=params)
+            _resp = await self.request('GET', _API_SEARCH, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            raise exceptions.RequestError('search song: {}'.format(e))
+            raise exceptions.RequestError('search songs: {}'.format(e))
 
         try:
             resp = await _resp.json(content_type=None)
             if resp['code'] != '000000':
-                raise exceptions.ResponseError('search song: {}'.format(resp['info']))
+                raise exceptions.ResponseError('search songs: {}'.format(resp['info']))
         except (aiohttp.ClientResponseError, json.JSONDecodeError, KeyError) as e:
-            raise exceptions.ResponseError('search song: {}'.format(e))
+            raise exceptions.ResponseError('search songs: {}'.format(e))
 
         return resp
 
@@ -164,7 +164,7 @@ class MiGu(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _GET_SONG_ID_API, params=params)
+            _resp = await self.request('GET', _API_GET_SONG_ID, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get song id: {}'.format(e))
 
@@ -200,7 +200,7 @@ class MiGu(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _GET_SONG_API, params=params)
+            _resp = await self.request('GET', _API_GET_SONG, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get song: {}'.format(e))
 
@@ -221,7 +221,7 @@ class MiGu(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _GET_SONG_URL_API, params=params)
+            _resp = await self.request('GET', _API_GET_SONG_URL, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get song url: {}'.format(e))
 
@@ -251,7 +251,7 @@ class MiGu(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _GET_SONG_PIC_API, params=params)
+            _resp = await self.request('GET', _API_GET_SONG_PIC, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get song pic: {}'.format(e))
 
@@ -278,7 +278,7 @@ class MiGu(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _GET_SONG_LYRIC_API, params=params)
+            _resp = await self.request('GET', _API_GET_SONG_LYRIC, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get song lyric: {}'.format(e))
 
@@ -310,7 +310,7 @@ class MiGu(api.API):
 
     async def get_artist(self, singer_id: typing.Union[int, str]) -> api.Artist:
         artist_info = await self.get_artist__info_raw(singer_id)
-        artist_song = await self.get_artist__song_raw(singer_id)
+        artist_song = await self.get_artist_songs_raw(singer_id)
 
         try:
             artist = artist_info['resource'][0]
@@ -339,7 +339,7 @@ class MiGu(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _GET_ARTIST_INFO_API, params=params)
+            _resp = await self.request('GET', _API_GET_ARTIST_INFO, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get artist info: {}'.format(e))
 
@@ -352,7 +352,7 @@ class MiGu(api.API):
 
         return resp
 
-    async def get_artist__song_raw(self, singer_id: typing.Union[int, str],
+    async def get_artist_songs_raw(self, singer_id: typing.Union[int, str],
                                    page: int = 1, page_size: int = 20) -> dict:
         params = {
             'singerId': singer_id,
@@ -361,16 +361,16 @@ class MiGu(api.API):
         }
 
         try:
-            resp = await self.request('GET', _GET_ARTIST_SONG_API, params=params)
+            resp = await self.request('GET', _API_GET_ARTIST_SONGS, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            raise exceptions.RequestError('get artist song: {}'.format(e))
+            raise exceptions.RequestError('get artist songs: {}'.format(e))
 
         try:
             resp = await resp.json(content_type=None)
             if resp['code'] != '000000':
-                raise exceptions.ResponseError('get artist song: {}'.format(resp['info']))
+                raise exceptions.ResponseError('get artist songs: {}'.format(resp['info']))
         except (aiohttp.ClientResponseError, json.JSONDecodeError, KeyError) as e:
-            raise exceptions.ResponseError('get artist song: {}'.format(e))
+            raise exceptions.ResponseError('get artist songs: {}'.format(e))
 
         return resp
 
@@ -403,7 +403,7 @@ class MiGu(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _GET_ALBUM_API, params=params)
+            _resp = await self.request('GET', _API_GET_ALBUM, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get album: {}'.format(e))
 
@@ -445,7 +445,7 @@ class MiGu(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _GET_PLAYLIST_API, params=params)
+            _resp = await self.request('GET', _API_GET_PLAYLIST, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get playlist: {}'.format(e))
 
@@ -473,9 +473,9 @@ class MiGu(api.API):
         return await self._session.request(method, url, **kwargs)
 
 
-async def search_song(keyword: str) -> api.SearchResult:
+async def search_songs(keyword: str) -> api.SearchSongsResult:
     async with MiGu() as client:
-        return await client.search_song(keyword)
+        return await client.search_songs(keyword)
 
 
 async def get_song(copyright_id: typing.Union[int, str]) -> api.Song:

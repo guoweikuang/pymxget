@@ -9,7 +9,7 @@ class TestMiGu(unittest.TestCase):
         self.loop = asyncio.get_event_loop()
 
     def test_search_song(self):
-        resp = self.loop.run_until_complete(migu.search_song('周杰伦'))
+        resp = self.loop.run_until_complete(migu.search_songs('周杰伦'))
         self.assertIsNotNone(resp)
 
     def test_get_song(self):

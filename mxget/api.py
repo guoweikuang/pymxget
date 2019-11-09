@@ -1,11 +1,20 @@
 import abc
+import enum
 import json
 import typing
 
 import aiohttp
 
 
-class SearchSongData:
+class Platform(enum.IntEnum):
+    NetEase = 1000
+    QQ = 1001
+    MiGu = 1002
+    KuGou = 1003
+    KuWo = 1004
+
+
+class SearchSongsData:
     def __init__(self, song_id: typing.Union[int, str], name: str, artist: str, album: str):
         self.id = song_id
         self.name = name
@@ -24,8 +33,8 @@ class SearchSongData:
         return json.dumps(self, default=lambda o: o.__dict__, indent=4, ensure_ascii=False)
 
 
-class SearchResult:
-    def __init__(self, keyword: str, count: int = 0, songs: typing.List[SearchSongData] = None):
+class SearchSongsResult:
+    def __init__(self, keyword: str, count: int = 0, songs: typing.List[SearchSongsData] = None):
         if songs is None:
             songs = []
         self.keyword: str = keyword
@@ -145,11 +154,11 @@ class API(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def platform(self) -> int:
+    def platform(self) -> Platform:
         """平台标识"""
 
     @abc.abstractmethod
-    async def search_song(self, keyword: str) -> SearchResult:
+    async def search_songs(self, keyword: str) -> SearchSongsResult:
         """搜索歌曲"""
 
     @abc.abstractmethod

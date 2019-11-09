@@ -12,7 +12,7 @@ from mxget import (
 )
 
 __all__ = [
-    'search_song',
+    'search_songs',
     'get_song',
     'get_artist',
     'get_album',
@@ -21,16 +21,16 @@ __all__ = [
     'get_song_lyric',
 ]
 
-_SEARCH_API = 'http://mobilecdn.kugou.com/api/v3/search/song'
-_GET_SONG_API = 'http://m.kugou.com/app/i/getSongInfo.php?cmd=playInfo'
-_GET_SONG_URL_API = 'http://trackercdn.kugou.com/i/v2/?pid=2&behavior=play&cmd=25'
-_GET_SONG_LYRIC_API = 'http://m.kugou.com/app/i/krc.php?cmd=100&timelength=1'
-_GET_ARTIST_INFO_API = 'http://mobilecdn.kugou.com/api/v3/singer/info'
-_GET_ARTIST_SONG_API = 'http://mobilecdn.kugou.com/api/v3/singer/song'
-_GET_ALBUM_INFO_API = 'http://mobilecdn.kugou.com/api/v3/album/info'
-_GET_ALBUM_SONG_API = 'http://mobilecdn.kugou.com/api/v3/album/song'
-_GET_PLAYLIST_INFO_API = 'http://mobilecdn.kugou.com/api/v3/special/info'
-_GET_PLAYLIST_SONG_API = 'http://mobilecdn.kugou.com/api/v3/special/song'
+_API_SEARCH = 'http://mobilecdn.kugou.com/api/v3/search/song'
+_API_GET_SONG = 'http://m.kugou.com/app/i/getSongInfo.php?cmd=playInfo'
+_API_GET_SONG_URL = 'http://trackercdn.kugou.com/i/v2/?pid=2&behavior=play&cmd=25'
+_API_GET_SONG_LYRIC = 'http://m.kugou.com/app/i/krc.php?cmd=100&timelength=1'
+_API_GET_ARTIST_INFO = 'http://mobilecdn.kugou.com/api/v3/singer/info'
+_API_GET_ARTIST_SONGS = 'http://mobilecdn.kugou.com/api/v3/singer/song'
+_API_GET_ALBUM_INFO = 'http://mobilecdn.kugou.com/api/v3/album/info'
+_API_GET_ALBUM_SONGS = 'http://mobilecdn.kugou.com/api/v3/album/song'
+_API_GET_PLAYLIST_INFO = 'http://mobilecdn.kugou.com/api/v3/special/info'
+_API_GET_PLAYLIST_SONGS = 'http://mobilecdn.kugou.com/api/v3/special/song'
 
 
 def _resolve(*songs: dict) -> typing.List[api.Song]:
@@ -63,30 +63,30 @@ class KuGou(api.API):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.close()
 
-    def platform(self) -> int:
-        return 1003
+    def platform(self) -> api.Platform:
+        return api.Platform.KuGou
 
-    async def search_song(self, keyword: str) -> api.SearchResult:
-        resp = await self.search_song_raw(keyword)
+    async def search_songs(self, keyword: str) -> api.SearchSongsResult:
+        resp = await self.search_songs_raw(keyword)
         try:
             _songs = resp['data']['info']
         except KeyError:
-            raise exceptions.DataError('search song: no data')
+            raise exceptions.DataError('search songs: no data')
 
         if not _songs:
-            raise exceptions.DataError('search song: no data')
+            raise exceptions.DataError('search songs: no data')
 
         songs = [
-            api.SearchSongData(
+            api.SearchSongsData(
                 song_id=_song['hash'],
                 name=_song['songname'].strip(),
                 artist=_song['singername'].replace('、', '/').strip(),
                 album=_song['album_name'].strip(),
             ) for _song in _songs
         ]
-        return api.SearchResult(keyword=keyword, count=len(songs), songs=songs)
+        return api.SearchSongsResult(keyword=keyword, count=len(songs), songs=songs)
 
-    async def search_song_raw(self, keyword: str, page: int = 1, page_size: int = 50) -> dict:
+    async def search_songs_raw(self, keyword: str, page: int = 1, page_size: int = 50) -> dict:
         params = {
             'keyword': keyword,
             'page': page,
@@ -94,23 +94,23 @@ class KuGou(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _SEARCH_API, params=params)
+            _resp = await self.request('GET', _API_SEARCH, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            raise exceptions.RequestError('search song: {}'.format(e))
+            raise exceptions.RequestError('search songs: {}'.format(e))
 
         try:
             resp = await _resp.json(content_type=None)
             if resp['errcode'] != 0:
-                raise exceptions.ResponseError('search song: {}'.format(resp.get('error', resp['errcode'])))
+                raise exceptions.ResponseError('search songs: {}'.format(resp.get('error', resp['errcode'])))
         except (aiohttp.ClientResponseError, json.JSONDecodeError, KeyError) as e:
-            raise exceptions.ResponseError('search song: {}'.format(e))
+            raise exceptions.ResponseError('search songs: {}'.format(e))
 
         return resp
 
     async def get_song(self, file_hash: str) -> api.Song:
         resp = await self.get_song_raw(file_hash)
-        await self.patch_album_info(resp)
-        await self.patch_song_lyric(resp)
+        await self._patch_album_info(resp)
+        await self._patch_song_lyric(resp)
         songs = _resolve(resp)
         return songs[0]
 
@@ -120,7 +120,7 @@ class KuGou(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _GET_SONG_API, params=params)
+            _resp = await self.request('GET', _API_GET_SONG, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get song: {}'.format(e))
 
@@ -155,7 +155,7 @@ class KuGou(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _GET_SONG_URL_API, params=params)
+            _resp = await self.request('GET', _API_GET_SONG_URL, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get song url: {}'.format(e))
 
@@ -174,14 +174,14 @@ class KuGou(api.API):
         }
 
         try:
-            resp = await self.request('GET', _GET_SONG_LYRIC_API, params=params)
+            resp = await self.request('GET', _API_GET_SONG_LYRIC, params=params)
             lyric = await resp.text()
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             return None
 
         return lyric if lyric else None
 
-    async def patch_song_info(self, *songs: dict) -> None:
+    async def _patch_song_info(self, *songs: dict) -> None:
         sem = asyncio.Semaphore(32)
 
         async def worker(song: dict):
@@ -202,7 +202,7 @@ class KuGou(api.API):
         tasks = [asyncio.ensure_future(worker(song)) for song in songs]
         await asyncio.gather(*tasks)
 
-    async def patch_song_url(self, *songs: dict) -> None:
+    async def _patch_song_url(self, *songs: dict) -> None:
         sem = asyncio.Semaphore(32)
 
         async def worker(song: dict):
@@ -212,7 +212,7 @@ class KuGou(api.API):
         tasks = [asyncio.ensure_future(worker(song)) for song in songs]
         await asyncio.gather(*tasks)
 
-    async def patch_song_lyric(self, *songs: dict) -> None:
+    async def _patch_song_lyric(self, *songs: dict) -> None:
         sem = asyncio.Semaphore(32)
 
         async def worker(song: dict):
@@ -222,7 +222,7 @@ class KuGou(api.API):
         tasks = [asyncio.ensure_future(worker(song)) for song in songs]
         await asyncio.gather(*tasks)
 
-    async def patch_album_info(self, *songs: dict) -> None:
+    async def _patch_album_info(self, *songs: dict) -> None:
         sem = asyncio.Semaphore(32)
 
         async def worker(song: dict):
@@ -238,7 +238,7 @@ class KuGou(api.API):
 
     async def get_artist(self, singer_id: typing.Union[int, str]) -> api.Artist:
         artist_info = await self.get_artist__info_raw(singer_id)
-        artist_song = await self.get_artist__song_raw(singer_id)
+        artist_song = await self.get_artist_songs_raw(singer_id)
 
         try:
             _songs = artist_song['data']['info']
@@ -248,9 +248,9 @@ class KuGou(api.API):
         if not _songs:
             raise exceptions.DataError('get artist: no data')
 
-        await self.patch_song_info(*_songs)
-        await self.patch_album_info(*_songs)
-        await self.patch_song_lyric(*_songs)
+        await self._patch_song_info(*_songs)
+        await self._patch_album_info(*_songs)
+        await self._patch_song_lyric(*_songs)
         songs = _resolve(*_songs)
         return api.Artist(
             name=artist_info['data']['singername'].strip(),
@@ -265,7 +265,7 @@ class KuGou(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _GET_ARTIST_INFO_API, params=params)
+            _resp = await self.request('GET', _API_GET_ARTIST_INFO, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get artist info: {}'.format(e))
 
@@ -278,7 +278,7 @@ class KuGou(api.API):
 
         return resp
 
-    async def get_artist__song_raw(self, singer_id: typing.Union[int, str],
+    async def get_artist_songs_raw(self, singer_id: typing.Union[int, str],
                                    page: int = 1, page_size: int = 50) -> dict:
         params = {
             'singerid': singer_id,
@@ -287,22 +287,22 @@ class KuGou(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _GET_ARTIST_SONG_API, params=params)
+            _resp = await self.request('GET', _API_GET_ARTIST_SONGS, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            raise exceptions.RequestError('get artist song: {}'.format(e))
+            raise exceptions.RequestError('get artist songs: {}'.format(e))
 
         try:
             resp = await _resp.json(content_type=None)
             if resp['errcode'] != 0:
-                raise exceptions.ResponseError('get artist song: {}'.format(resp.get('error', resp['errcode'])))
+                raise exceptions.ResponseError('get artist songs: {}'.format(resp.get('error', resp['errcode'])))
         except (aiohttp.ClientResponseError, json.JSONDecodeError, KeyError) as e:
-            raise exceptions.ResponseError('get artist song: {}'.format(e))
+            raise exceptions.ResponseError('get artist songs: {}'.format(e))
 
         return resp
 
     async def get_album(self, album_id: typing.Union[int, str]) -> api.Album:
         album_info = await self.get_album_info_raw(album_id)
-        album_song = await self.get_album_song_raw(album_id)
+        album_song = await self.get_album_songs_raw(album_id)
 
         try:
             _songs = album_song['data']['info']
@@ -312,9 +312,9 @@ class KuGou(api.API):
         if not _songs:
             raise exceptions.DataError('get album: no data')
 
-        await self.patch_song_info(*_songs)
-        await self.patch_album_info(*_songs)
-        await self.patch_song_lyric(*_songs)
+        await self._patch_song_info(*_songs)
+        await self._patch_album_info(*_songs)
+        await self._patch_song_lyric(*_songs)
         songs = _resolve(*_songs)
         return api.Album(
             name=album_info['data']['albumname'].strip(),
@@ -329,7 +329,7 @@ class KuGou(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _GET_ALBUM_INFO_API, params=params)
+            _resp = await self.request('GET', _API_GET_ALBUM_INFO, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get album info: {}'.format(e))
 
@@ -342,8 +342,8 @@ class KuGou(api.API):
 
         return resp
 
-    async def get_album_song_raw(self, album_id: typing.Union[int, str],
-                                 page: int = 1, page_size: int = -1) -> dict:
+    async def get_album_songs_raw(self, album_id: typing.Union[int, str],
+                                  page: int = 1, page_size: int = -1) -> dict:
         params = {
             'albumid': album_id,
             'page': page,
@@ -351,22 +351,22 @@ class KuGou(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _GET_ALBUM_SONG_API, params=params)
+            _resp = await self.request('GET', _API_GET_ALBUM_SONGS, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            raise exceptions.RequestError('get album song: {}'.format(e))
+            raise exceptions.RequestError('get album songs: {}'.format(e))
 
         try:
             resp = await _resp.json(content_type=None)
             if resp['errcode'] != 0:
-                raise exceptions.ResponseError('get album song: {}'.format(resp.get('error', resp['errcode'])))
+                raise exceptions.ResponseError('get album songs: {}'.format(resp.get('error', resp['errcode'])))
         except (aiohttp.ClientResponseError, json.JSONDecodeError, KeyError) as e:
-            raise exceptions.ResponseError('get album song: {}'.format(e))
+            raise exceptions.ResponseError('get album songs: {}'.format(e))
 
         return resp
 
     async def get_playlist(self, special_id: typing.Union[int, str]) -> api.Playlist:
         playlist_info = await self.get_playlist_info_raw(special_id)
-        playlist_song = await self.get_playlist_song_raw(special_id)
+        playlist_song = await self.get_playlist_songs_raw(special_id)
 
         try:
             _songs = playlist_song['data']['info']
@@ -376,9 +376,9 @@ class KuGou(api.API):
         if not _songs:
             raise exceptions.DataError('get playlist: no data')
 
-        await self.patch_song_info(*_songs)
-        await self.patch_album_info(*_songs)
-        await self.patch_song_lyric(*_songs)
+        await self._patch_song_info(*_songs)
+        await self._patch_album_info(*_songs)
+        await self._patch_song_lyric(*_songs)
         songs = _resolve(*_songs)
         return api.Playlist(
             name=playlist_info['data']['specialname'].strip(),
@@ -393,7 +393,7 @@ class KuGou(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _GET_PLAYLIST_INFO_API, params=params)
+            _resp = await self.request('GET', _API_GET_PLAYLIST_INFO, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get playlist info: {}'.format(e))
 
@@ -406,8 +406,8 @@ class KuGou(api.API):
 
         return resp
 
-    async def get_playlist_song_raw(self, special_id: typing.Union[int, str],
-                                    page: int = 1, page_size: int = -1) -> dict:
+    async def get_playlist_songs_raw(self, special_id: typing.Union[int, str],
+                                     page: int = 1, page_size: int = -1) -> dict:
         params = {
             'specialid': special_id,
             'page': page,
@@ -415,16 +415,16 @@ class KuGou(api.API):
         }
 
         try:
-            _resp = await self.request('GET', _GET_PLAYLIST_SONG_API, params=params)
+            _resp = await self.request('GET', _API_GET_PLAYLIST_SONGS, params=params)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            raise exceptions.RequestError('get playlist song: {}'.format(e))
+            raise exceptions.RequestError('get playlist songs: {}'.format(e))
 
         try:
             resp = await _resp.json(content_type=None)
             if resp['errcode'] != 0:
-                raise exceptions.ResponseError('get playlist song: {}'.format(resp.get('error', resp['errcode'])))
+                raise exceptions.ResponseError('get playlist songs: {}'.format(resp.get('error', resp['errcode'])))
         except (aiohttp.ClientResponseError, json.JSONDecodeError, KeyError) as e:
-            raise exceptions.ResponseError('get playlist song: {}'.format(e))
+            raise exceptions.ResponseError('get playlist songs: {}'.format(e))
 
         return resp
 
@@ -442,9 +442,9 @@ class KuGou(api.API):
         return await self._session.request(method, url, **kwargs)
 
 
-async def search_song(keyword: str) -> api.SearchResult:
+async def search_songs(keyword: str) -> api.SearchSongsResult:
     async with KuGou() as client:
-        return await client.search_song(keyword)
+        return await client.search_songs(keyword)
 
 
 async def get_song(file_hash: str) -> api.Song:

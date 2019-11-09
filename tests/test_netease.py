@@ -9,7 +9,7 @@ class TestNetEase(unittest.TestCase):
         self.loop = asyncio.get_event_loop()
 
     def test_search_song(self):
-        resp = self.loop.run_until_complete(netease.search_song('alone'))
+        resp = self.loop.run_until_complete(netease.search_songs('alone'))
         self.assertIsNotNone(resp)
 
     def test_get_song(self):

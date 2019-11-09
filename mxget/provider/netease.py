@@ -16,7 +16,7 @@ from mxget import (
 )
 
 __all__ = [
-    'search_song',
+    'search_songs',
     'get_song',
     'get_artist',
     'get_album',
@@ -27,7 +27,7 @@ __all__ = [
 
 _PRESET_KEY = b'0CoJUm6Qyw8W8jud'
 _IV = b'0102030405060708'
-_LINUX_API_KEY = b'rFgB&h#%2?^eDg:Q'
+_API_LINUX_KEY = b'rFgB&h#%2?^eDg:Q'
 _EAPI_KEY = b'e82ckenh8dichen8'
 _DEFAULT_RSA_PUBLIC_KEY_MODULES = 'e0b509f6259df8642dbc35662901477df22677ec152b5ff68ace615bb7b72515' \
                                   '2b3ab17a876aea8a5aa76d2e417629ec4ee341f56135fccf695280104e0312ec' \
@@ -35,13 +35,13 @@ _DEFAULT_RSA_PUBLIC_KEY_MODULES = 'e0b509f6259df8642dbc35662901477df22677ec152b5
                                   '13cfe4875d3e82047b97ddef52741d546b8e289dc6935b3ece0462db0a22b8e7 '
 _DEFAULT_RSA_PUBLIC_KEY_EXPONENT = 0x10001
 
-_LINUX_API = 'https://music.163.com/api/linux/forward'
-_SEARCH_API = 'https://music.163.com/weapi/search/get'
-_GET_SONG_API = 'https://music.163.com/weapi/v3/song/detail'
-_GET_SONG_URL_API = 'https://music.163.com/weapi/song/enhance/player/url'
-_GET_ARTIST_API = 'https://music.163.com/weapi/v1/artist/{artist_id}'
-_GET_ALBUM_API = 'https://music.163.com/weapi/v1/album/{album_id}'
-_GET_PLAYLIST_API = 'https://music.163.com/weapi/v3/playlist/detail'
+_API_LINUX = 'https://music.163.com/api/linux/forward'
+_API_SEARCH = 'https://music.163.com/weapi/search/get'
+_API_GET_SONG = 'https://music.163.com/weapi/v3/song/detail'
+_API_GET_SONG_URL = 'https://music.163.com/weapi/song/enhance/player/url'
+_API_GET_ARTIST = 'https://music.163.com/weapi/v1/artist/{artist_id}'
+_API_GET_ALBUM = 'https://music.163.com/weapi/v1/album/{album_id}'
+_API_GET_PLAYLIST = 'https://music.163.com/weapi/v3/playlist/detail'
 
 _SONG_REQUEST_LIMIT = 1000
 
@@ -75,7 +75,7 @@ def _linuxapi(orig_data: dict = None) -> dict:
         orig_data = {}
     plain_text = json.dumps(orig_data)
     return {
-        'eparams': crypto.aes_ecb_encrypt(plain_text.encode('utf-8'), _LINUX_API_KEY).hex().upper()
+        'eparams': crypto.aes_ecb_encrypt(plain_text.encode('utf-8'), _API_LINUX_KEY).hex().upper()
     }
 
 
@@ -133,30 +133,30 @@ class NetEase(api.API):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.close()
 
-    def platform(self) -> int:
-        return 1000
+    def platform(self) -> api.Platform:
+        return api.Platform.NetEase
 
-    async def search_song(self, keyword: str) -> api.SearchResult:
-        resp = await self.search_song_raw(keyword)
+    async def search_songs(self, keyword: str) -> api.SearchSongsResult:
+        resp = await self.search_songs_raw(keyword)
         try:
             songs = resp['result']['songs']
         except KeyError:
-            raise exceptions.DataError('search song: no data')
+            raise exceptions.DataError('search songs: no data')
 
         if not songs:
-            raise exceptions.DataError('search song: no data')
+            raise exceptions.DataError('search songs: no data')
 
         songs = [
-            api.SearchSongData(
+            api.SearchSongsData(
                 song_id=song['id'],
                 name=song['name'].strip(),
                 artist='/'.join([a['name'].strip() for a in song['artists']]),
                 album=song['album']['name'].strip(),
             ) for song in songs
         ]
-        return api.SearchResult(keyword=keyword, count=len(songs), songs=songs)
+        return api.SearchSongsResult(keyword=keyword, count=len(songs), songs=songs)
 
-    async def search_song_raw(self, keyword: str, offset: int = 0, limit: int = 50) -> dict:
+    async def search_songs_raw(self, keyword: str, offset: int = 0, limit: int = 50) -> dict:
         data = {
             's': keyword,
             'type': 1,
@@ -165,16 +165,16 @@ class NetEase(api.API):
         }
 
         try:
-            _resp = await self.request('POST', _SEARCH_API, data=_weapi(data))
+            _resp = await self.request('POST', _API_SEARCH, data=_weapi(data))
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            raise exceptions.RequestError('search song: {}'.format(e))
+            raise exceptions.RequestError('search songs: {}'.format(e))
 
         try:
             resp = await _resp.json(content_type=None)
             if resp['code'] != 200:
-                raise exceptions.ResponseError('search song: {}'.format(resp['msg']))
+                raise exceptions.ResponseError('search songs: {}'.format(resp['msg']))
         except (aiohttp.ClientResponseError, json.JSONDecodeError, KeyError) as e:
-            raise exceptions.ResponseError('search song: {}'.format(e))
+            raise exceptions.ResponseError('search songs: {}'.format(e))
 
         return resp
 
@@ -200,14 +200,14 @@ class NetEase(api.API):
         }
 
         try:
-            _resp = await self.request('POST', _GET_SONG_API, data=_weapi(data))
+            _resp = await self.request('POST', _API_GET_SONG, data=_weapi(data))
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get song: {}'.format(e))
 
         try:
             resp = await _resp.json(content_type=None)
             if resp['code'] != 200:
-                raise exceptions.ResponseError('get song: {}'.format(resp['msg']))
+                raise exceptions.ResponseError('get songs: {}'.format(resp['msg']))
         except (aiohttp.ClientResponseError, json.JSONDecodeError, KeyError) as e:
             raise exceptions.ResponseError('get song: {}'.format(e))
 
@@ -229,7 +229,7 @@ class NetEase(api.API):
         }
 
         try:
-            _resp = await self.request('POST', _GET_SONG_URL_API, data=_weapi(data))
+            _resp = await self.request('POST', _API_GET_SONG_URL, data=_weapi(data))
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get song url: {}'.format(e))
 
@@ -260,7 +260,7 @@ class NetEase(api.API):
         }
 
         try:
-            _resp = await self.request('POST', _LINUX_API, data=_linuxapi(data))
+            _resp = await self.request('POST', _API_LINUX, data=_linuxapi(data))
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get song lyric: {}'.format(e))
 
@@ -319,7 +319,7 @@ class NetEase(api.API):
 
     async def get_artist_raw(self, artist_id: typing.Union[int, str]) -> dict:
         try:
-            _resp = await self.request('POST', _GET_ARTIST_API.format(artist_id=artist_id), data=_weapi())
+            _resp = await self.request('POST', _API_GET_ARTIST.format(artist_id=artist_id), data=_weapi())
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get artist: {}'.format(e))
 
@@ -354,7 +354,7 @@ class NetEase(api.API):
 
     async def get_album_raw(self, album_id: typing.Union[int, str]) -> dict:
         try:
-            _resp = await self.request('POST', _GET_ALBUM_API.format(album_id=album_id), data=_weapi())
+            _resp = await self.request('POST', _API_GET_ALBUM.format(album_id=album_id), data=_weapi())
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get album: {}'.format(e))
 
@@ -413,7 +413,7 @@ class NetEase(api.API):
         }
 
         try:
-            _resp = await self.request('POST', _GET_PLAYLIST_API, data=_weapi(data))
+            _resp = await self.request('POST', _API_GET_PLAYLIST, data=_weapi(data))
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get playlist: {}'.format(e))
 
@@ -447,9 +447,9 @@ class NetEase(api.API):
         return await self._session.request(method, url, **kwargs)
 
 
-async def search_song(keyword: str) -> api.SearchResult:
+async def search_songs(keyword: str) -> api.SearchSongsResult:
     async with NetEase() as client:
-        return await client.search_song(keyword)
+        return await client.search_songs(keyword)
 
 
 async def get_song(song_id: typing.Union[int, str]) -> api.Song:

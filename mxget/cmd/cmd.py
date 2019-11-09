@@ -7,6 +7,7 @@ import click
 
 import mxget
 from mxget import (
+    api,
     cli,
     conf,
     exceptions,
@@ -18,7 +19,7 @@ _CONTEXT_SETTINGS = {
 }
 
 
-def _get_platform_id(platform_flag: str = None) -> typing.Optional[int]:
+def _get_platform_id(platform_flag: str = None) -> typing.Optional[api.Platform]:
     if platform_flag is None:
         platform_id = conf.settings['music_platform']
     else:
@@ -86,7 +87,7 @@ def search(platform_flag, keyword) -> None:
     client = conf.get_client(platform_id)
     loop = asyncio.get_event_loop()
     try:
-        resp = loop.run_until_complete(client.search_song(keyword))
+        resp = loop.run_until_complete(client.search_songs(keyword))
         for i, v in enumerate(resp.songs):
             print('[{:02d}] {} - {} - {}'.format(i + 1, v.name, v.artist, v.id))
         if platform_flag is None:

@@ -17,35 +17,36 @@ from mxget.provider import (
 
 _DEFAULT_SETTINGS = {
     'download_dir': './downloads',
-    'music_platform': 1000,
+    'music_platform': api.Platform.NetEase,
 }
 
 _PLATFORM_IDS = {
-    'netease': 1000,
-    'nc': 1000,
-    'qq': 1001,
-    'migu': 1002,
-    'mg': 1002,
-    'kugou': 1003,
-    'kg': 1003,
-    'kuwo': 1004,
-    'kw': 1004,
+    'netease': api.Platform.NetEase,
+    'nc': api.Platform.NetEase,
+    'tencent': api.Platform.QQ,
+    'qq': api.Platform.QQ,
+    'migu': api.Platform.MiGu,
+    'mg': api.Platform.MiGu,
+    'kugou': api.Platform.KuGou,
+    'kg': api.Platform.KuGou,
+    'kuwo': api.Platform.KuWo,
+    'kw': api.Platform.KuWo,
 }
 
 _PLATFORM_CLIENTS = {
-    1000: netease.NetEase,
-    1001: qq.QQ,
-    1002: migu.MiGu,
-    1003: kugou.KuGou,
-    1004: kuwo.KuWo,
+    api.Platform.NetEase: netease.NetEase,
+    api.Platform.QQ: qq.QQ,
+    api.Platform.MiGu: migu.MiGu,
+    api.Platform.KuGou: kugou.KuGou,
+    api.Platform.KuWo: kuwo.KuWo,
 }
 
 _PLATFORM_SITES = {
-    1000: 'music.163.com',
-    1001: 'y.qq.com',
-    1002: 'music.migu.cn',
-    1003: 'kugou.com',
-    1004: 'kuwo.cn',
+    api.Platform.NetEase: 'music.163.com',
+    api.Platform.QQ: 'y.qq.com',
+    api.Platform.MiGu: 'music.migu.cn',
+    api.Platform.KuGou: 'kugou.com',
+    api.Platform.KuWo: 'kuwo.cn',
 }
 
 
@@ -62,12 +63,12 @@ def get_platform(platform_flag: str) -> typing.Optional[int]:
     return _PLATFORM_IDS.get(platform_flag)
 
 
-def get_client(platform_id: int) -> typing.Optional[api.API]:
+def get_client(platform_id: api.Platform) -> typing.Optional[api.API]:
     client = _PLATFORM_CLIENTS.get(platform_id)
     return client() if client is not None else None
 
 
-def get_site(platform_id: int) -> typing.Optional[str]:
+def get_site(platform_id: api.Platform) -> typing.Optional[str]:
     return _PLATFORM_SITES.get(platform_id)
 
 

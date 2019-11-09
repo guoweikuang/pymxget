@@ -15,9 +15,9 @@ from mxget.provider import (
 routes = web.RouteTableDef()
 
 
-async def search_song(client: api.API, keyword: str):
+async def search_songs(client: api.API, keyword: str):
     try:
-        resp = await client.search_song(keyword)
+        resp = await client.search_songs(keyword)
     except exceptions.ClientError as e:
         await client.close()
         return web.json_response(data={
@@ -111,8 +111,8 @@ async def get_playlist(client: api.API, playlist_id: str):
 
 
 @routes.get('/api/netease/search/{keyword}')
-async def search_song_from_netease(request: web.Request):
-    return await search_song(netease.NetEase(), request.match_info['keyword'])
+async def search_songs_from_netease(request: web.Request):
+    return await search_songs(netease.NetEase(), request.match_info['keyword'])
 
 
 @routes.get('/api/netease/song/{song_id}')
@@ -136,8 +136,8 @@ async def get_playlist_from_netease(request: web.Request):
 
 
 @routes.get('/api/qq/search/{keyword}')
-async def search_song_from_qq(request: web.Request):
-    return await search_song(qq.QQ(), request.match_info['keyword'])
+async def search_songs_from_qq(request: web.Request):
+    return await search_songs(qq.QQ(), request.match_info['keyword'])
 
 
 @routes.get('/api/qq/song/{song_id}')
@@ -161,8 +161,8 @@ async def get_playlist_from_qq(request: web.Request):
 
 
 @routes.get('/api/migu/search/{keyword}')
-async def search_song_from_migu(request: web.Request):
-    return await search_song(migu.MiGu(), request.match_info['keyword'])
+async def search_songs_from_migu(request: web.Request):
+    return await search_songs(migu.MiGu(), request.match_info['keyword'])
 
 
 @routes.get('/api/migu/song/{song_id}')
@@ -186,8 +186,8 @@ async def get_playlist_from_migu(request: web.Request):
 
 
 @routes.get('/api/kugou/search/{keyword}')
-async def search_song_from_kugou(request: web.Request):
-    return await search_song(kugou.KuGou(), request.match_info['keyword'])
+async def search_songs_from_kugou(request: web.Request):
+    return await search_songs(kugou.KuGou(), request.match_info['keyword'])
 
 
 @routes.get('/api/kugou/song/{song_id}')
@@ -211,8 +211,8 @@ async def get_playlist_from_kugou(request: web.Request):
 
 
 @routes.get('/api/kuwo/search/{keyword}')
-async def search_song_from_kuwo(request: web.Request):
-    return await search_song(kuwo.KuWo(), request.match_info['keyword'])
+async def search_songs_from_kuwo(request: web.Request):
+    return await search_songs(kuwo.KuWo(), request.match_info['keyword'])
 
 
 @routes.get('/api/kuwo/song/{song_id}')
