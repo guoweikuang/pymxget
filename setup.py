@@ -22,7 +22,7 @@ setuptools.setup(
     description=mxget.__doc__.strip(),
     long_description=long_description(),
     long_description_content_type="text/markdown",
-    url="https://github.com/winterssy/pymxget",
+    url="https://github.com/winterssy/mxget",
     author=mxget.__author__,
     author_email="winterssy@foxmail.com",
     packages=setuptools.find_packages(),
