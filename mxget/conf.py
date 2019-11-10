@@ -12,7 +12,9 @@ from mxget.provider import (
     qq,
     migu,
     kugou,
-    kuwo
+    kuwo,
+    xiami,
+    baidu,
 )
 
 _DEFAULT_SETTINGS = {
@@ -31,6 +33,11 @@ _PLATFORM_IDS = {
     'kg': api.Platform.KuGou,
     'kuwo': api.Platform.KuWo,
     'kw': api.Platform.KuWo,
+    'xiami': api.Platform.XiaMi,
+    'xm': api.Platform.XiaMi,
+    'qianqian': api.Platform.BaiDu,
+    'baidu': api.Platform.BaiDu,
+    'bd': api.Platform.BaiDu,
 }
 
 _PLATFORM_CLIENTS = {
@@ -39,6 +46,8 @@ _PLATFORM_CLIENTS = {
     api.Platform.MiGu: migu.MiGu,
     api.Platform.KuGou: kugou.KuGou,
     api.Platform.KuWo: kuwo.KuWo,
+    api.Platform.XiaMi: xiami.XiaMi,
+    api.Platform.BaiDu: baidu.BaiDu,
 }
 
 _PLATFORM_SITES = {
@@ -47,6 +56,8 @@ _PLATFORM_SITES = {
     api.Platform.MiGu: 'music.migu.cn',
     api.Platform.KuGou: 'kugou.com',
     api.Platform.KuWo: 'kuwo.cn',
+    api.Platform.XiaMi: 'xiami.com',
+    api.Platform.BaiDu: 'music.taihe.com',
 }
 
 

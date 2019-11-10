@@ -237,7 +237,7 @@ class KuGou(api.API):
         await asyncio.gather(*tasks)
 
     async def get_artist(self, singer_id: typing.Union[int, str]) -> api.Artist:
-        artist_info = await self.get_artist__info_raw(singer_id)
+        artist_info = await self.get_artist_info_raw(singer_id)
         artist_song = await self.get_artist_songs_raw(singer_id)
 
         try:
@@ -259,7 +259,7 @@ class KuGou(api.API):
             songs=songs
         )
 
-    async def get_artist__info_raw(self, singer_id: typing.Union[int, str]) -> dict:
+    async def get_artist_info_raw(self, singer_id: typing.Union[int, str]) -> dict:
         params = {
             'singerid': singer_id,
         }

@@ -296,20 +296,20 @@ class MiGu(api.API):
 
         async def worker(song: dict):
             async with sem:
-                lrc_url = song.get('lrcUrl')
-                if lrc_url is None:
+                lrc_url = song.get('lrcUrl', '')
+                if not lrc_url:
                     return
                 try:
                     resp = await self.request('GET', lrc_url)
                     song['lyric'] = await resp.text()
-                except (aiohttp.ClientError, aiohttp.ClientResponseError):
+                except (aiohttp.ClientError, asyncio.TimeoutError):
                     pass
 
         tasks = [asyncio.ensure_future(worker(song)) for song in songs]
         await asyncio.gather(*tasks)
 
     async def get_artist(self, singer_id: typing.Union[int, str]) -> api.Artist:
-        artist_info = await self.get_artist__info_raw(singer_id)
+        artist_info = await self.get_artist_info_raw(singer_id)
         artist_song = await self.get_artist_songs_raw(singer_id)
 
         try:
@@ -333,7 +333,7 @@ class MiGu(api.API):
             songs=songs
         )
 
-    async def get_artist__info_raw(self, singer_id: typing.Union[int, str]) -> dict:
+    async def get_artist_info_raw(self, singer_id: typing.Union[int, str]) -> dict:
         params = {
             'resourceId': singer_id,
         }

@@ -380,16 +380,16 @@ class NetEase(api.API):
             raise exceptions.DataError('get playlist: no data')
 
         if total > _SONG_REQUEST_LIMIT:
-            async def patch_tracks(*args: typing.Union[int, str]):
-                return await self.get_songs_raw(*args)
+            song_ids = [track_ids[i]['id'] for i in range(_SONG_REQUEST_LIMIT, total)]
 
+            async def patch_tracks(*ids: typing.Union[int, str]):
+                return await self.get_songs_raw(*ids)
+
+            extra = total - _SONG_REQUEST_LIMIT
             tasks = []
-            for i in range(_SONG_REQUEST_LIMIT, total, _SONG_REQUEST_LIMIT):
-                j = i + _SONG_REQUEST_LIMIT
-                if j > total:
-                    j = total
-                song_ids = [track_ids[k]['id'] for k in range(i, j)]
-                tasks.append(asyncio.ensure_future(patch_tracks(*song_ids)))
+            for i in range(0, extra, _SONG_REQUEST_LIMIT):
+                _ids = song_ids[i:min(i + _SONG_REQUEST_LIMIT, extra)]
+                tasks.append(asyncio.ensure_future(patch_tracks(*_ids)))
 
             await asyncio.gather(*tasks)
             for task in tasks:

@@ -10,6 +10,8 @@ from mxget.provider import (
     migu,
     kugou,
     kuwo,
+    xiami,
+    baidu,
 )
 
 routes = web.RouteTableDef()
@@ -233,6 +235,56 @@ async def get_album_from_kuwo(request: web.Request):
 @routes.get('/api/kuwo/playlist/{playlist_id}')
 async def get_playlist_from_kuwo(request: web.Request):
     return await get_playlist(kuwo.KuWo(), request.match_info['playlist_id'])
+
+
+@routes.get('/api/xiami/search/{keyword}')
+async def search_songs_from_xiami(request: web.Request):
+    return await search_songs(xiami.XiaMi(), request.match_info['keyword'])
+
+
+@routes.get('/api/xiami/song/{song_id}')
+async def get_song_from_xiami(request: web.Request):
+    return await get_song(xiami.XiaMi(), request.match_info['song_id'])
+
+
+@routes.get('/api/xiami/artist/{artist_id}')
+async def get_artist_from_xiami(request: web.Request):
+    return await get_artist(xiami.XiaMi(), request.match_info['artist_id'])
+
+
+@routes.get('/api/xiami/album/{album_id}')
+async def get_album_from_xiami(request: web.Request):
+    return await get_album(xiami.XiaMi(), request.match_info['album_id'])
+
+
+@routes.get('/api/xiami/playlist/{playlist_id}')
+async def get_playlist_from_xiami(request: web.Request):
+    return await get_playlist(xiami.XiaMi(), request.match_info['playlist_id'])
+
+
+@routes.get('/api/qianqian/search/{keyword}')
+async def search_songs_from_qianqian(request: web.Request):
+    return await search_songs(baidu.BaiDu(), request.match_info['keyword'])
+
+
+@routes.get('/api/qianqian/song/{song_id}')
+async def get_song_from_qianqian(request: web.Request):
+    return await get_song(baidu.BaiDu(), request.match_info['song_id'])
+
+
+@routes.get('/api/qianqian/artist/{artist_id}')
+async def get_artist_from_qianqian(request: web.Request):
+    return await get_artist(baidu.BaiDu(), request.match_info['artist_id'])
+
+
+@routes.get('/api/qianqian/album/{album_id}')
+async def get_album_from_qianqian(request: web.Request):
+    return await get_album(baidu.BaiDu(), request.match_info['album_id'])
+
+
+@routes.get('/api/qianqian/playlist/{playlist_id}')
+async def get_playlist_from_qianqian(request: web.Request):
+    return await get_playlist(baidu.BaiDu(), request.match_info['playlist_id'])
 
 
 async def init():

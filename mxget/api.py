@@ -15,6 +15,8 @@ class Platform(enum.IntEnum):
     MiGu = 1002
     KuGou = 1003
     KuWo = 1004
+    XiaMi = 1005
+    BaiDu = 1006
 
 
 class SearchSongsData:
