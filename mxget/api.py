@@ -5,6 +5,9 @@ import typing
 
 import aiohttp
 
+USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' \
+             'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'
+
 
 class Platform(enum.IntEnum):
     NetEase = 1000
@@ -54,7 +57,7 @@ class SearchSongsResult:
 
 class Song:
     def __init__(self, name: str, artist: str, album: str = '',
-                 pic_url: str = '', lyric: str = '', url: str = ''):
+                 pic_url: str = None, lyric: str = None, url: str = None):
         self.name = name
         self.artist = artist
         self.album = album
