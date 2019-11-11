@@ -75,7 +75,7 @@ Current settings:
     conf.settings.save()
 
 
-@root.command(help='Search song from the Internet.')
+@root.command(help='Search songs from the Internet.')
 @click.option('--from', 'platform_flag', help='Music platform')
 @click.option('--keyword', '-k', prompt=True, help='Search keyword')
 def search(platform_flag, keyword) -> None:
@@ -100,7 +100,7 @@ def search(platform_flag, keyword) -> None:
         loop.run_until_complete(client.close())
 
 
-@root.command(help='Fetch and download song via its id.')
+@root.command(help='Fetch and download single song via its id.')
 @click.option('--from', 'platform_flag', help='Music platform')
 @click.option('--id', 'song_id', prompt=True, help='Song id')
 @click.option('--tag', is_flag=True, help='Update music metadata')

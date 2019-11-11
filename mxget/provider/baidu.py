@@ -199,13 +199,11 @@ class BaiDu(api.API):
                 else:
                     song['url'] = _song_url(urls)
 
-                try:
-                    lrc_link = resp['songinfo']['lrclink']
-                except KeyError:
-                    return
-
                 if not song.get('lrclink', ''):
-                    song['lrclink'] = lrc_link
+                    try:
+                        song['lrclink'] = resp['songinfo']['lrclink']
+                    except KeyError:
+                        pass
 
         tasks = [asyncio.ensure_future(worker(song)) for song in songs]
         await asyncio.gather(*tasks)
