@@ -4,29 +4,44 @@ import unittest
 from mxget.provider import baidu
 
 
-class TestKuWo(unittest.TestCase):
-    def setUp(self) -> None:
-        self.loop = asyncio.get_event_loop()
+def async_test(f):
+    def wrapper(*args, **kwargs):
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(f(*args, **kwargs))
 
-    def test_search_song(self):
-        resp = self.loop.run_until_complete(baidu.search_songs('五月天'))
-        self.assertIsNotNone(resp)
+    return wrapper
 
-    def test_get_song(self):
-        resp = self.loop.run_until_complete(baidu.get_song('1686649'))
-        self.assertIsNotNone(resp)
 
-    def test_get_artist(self):
-        resp = self.loop.run_until_complete(baidu.get_artist('1557'))
-        self.assertIsNotNone(resp)
+class TestBaiDu(unittest.TestCase):
+    @async_test
+    async def test_search_songs(self):
+        async with baidu.BaiDu() as client:
+            resp = await client.search_songs('五月天')
+            self.assertIsNotNone(resp)
 
-    def test_get_album(self):
-        resp = self.loop.run_until_complete(baidu.get_album('946499'))
-        self.assertIsNotNone(resp)
+    @async_test
+    async def test_get_song(self):
+        async with baidu.BaiDu() as client:
+            resp = await client.get_song('1686649')
+            self.assertIsNotNone(resp)
 
-    def test_get_playlist(self):
-        resp = self.loop.run_until_complete(baidu.get_playlist('566347665'))
-        self.assertIsNotNone(resp)
+    @async_test
+    async def test_get_artist(self):
+        async with baidu.BaiDu() as client:
+            resp = await client.get_artist('1557')
+            self.assertIsNotNone(resp)
+
+    @async_test
+    async def test_get_album(self):
+        async with baidu.BaiDu() as client:
+            resp = await client.get_album('946499')
+            self.assertIsNotNone(resp)
+
+    @async_test
+    async def test_get_playlist(self):
+        async with baidu.BaiDu() as client:
+            resp = await client.get_playlist('566347665')
+            self.assertIsNotNone(resp)
 
 
 if __name__ == '__main__':

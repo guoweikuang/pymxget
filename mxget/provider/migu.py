@@ -9,14 +9,6 @@ from mxget import (
     exceptions,
 )
 
-__all__ = [
-    'search_songs',
-    'get_song',
-    'get_artist',
-    'get_album',
-    'get_playlist',
-]
-
 _API_SEARCH = 'https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/search_all.do?isCopyright=1&isCorrect=1'
 _API_GET_SONG_ID = 'http://music.migu.cn/v3/api/music/audioPlayer/songs?type=1'
 _API_GET_SONG = 'https://app.c.nf.migu.cn/MIGUM2.0/v2.0/content/querySongBySongId.do?contentId=0'
@@ -69,6 +61,7 @@ def _patch_song_info(*songs: dict) -> None:
 def _resolve(*songs: dict) -> typing.List[api.Song]:
     return [
         api.Song(
+            song_id=song['songId'],
             name=song['songName'].strip(),
             artist=song['singer'].replace('|', '/').strip(),
             album=song.get('album', '').strip(),
@@ -96,8 +89,8 @@ class MiGu(api.API):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.close()
 
-    def platform(self) -> api.Platform:
-        return api.Platform.MiGu
+    def platform_id(self) -> api.PlatformId:
+        return api.PlatformId.MiGu
 
     async def search_songs(self, keyword: str) -> api.SearchSongsResult:
         resp = await self.search_songs_raw(keyword)
@@ -111,10 +104,10 @@ class MiGu(api.API):
 
         songs = [
             api.SearchSongsData(
-                song_id=_song['copyrightId'],
+                song_id=_song['id'],
                 name=_song['name'].strip(),
                 artist='/'.join([s['name'].strip() for s in _song['singers']]),
-                album='/'.join([a['name'].strip() for a in _song['albums']])
+                album='/'.join([a['name'].strip() for a in _song['albums']]) if _song.get('album') is not None else '',
             ) for _song in _songs
         ]
         return api.SearchSongsResult(keyword=keyword, count=len(songs), songs=songs)
@@ -177,10 +170,15 @@ class MiGu(api.API):
 
         return resp
 
-    async def get_song(self, copyright_id: typing.Union[int, str]) -> api.Song:
-        song_id = await self.get_song_id(copyright_id)
-        if song_id is None:
-            raise exceptions.DataError('get song: no data')
+    async def get_song(self, mid: typing.Union[int, str]) -> api.Song:
+        if mid.isdigit():
+            mid = str(mid)
+        if len(str(mid)) > 10 and mid.startswith('6'):
+            song_id = await self.get_song_id(mid)
+            if song_id is None:
+                raise exceptions.DataError('get song: no data')
+        else:
+            song_id = mid
 
         resp = await self.get_song_raw(song_id)
         try:
@@ -327,10 +325,11 @@ class MiGu(api.API):
         _patch_song_info(*_songs)
         songs = _resolve(*_songs)
         return api.Artist(
+            artist_id=artist['singerId'],
             name=artist['singer'].strip(),
             pic_url=_get_pic_url(artist['imgs']),
             count=len(songs),
-            songs=songs
+            songs=songs,
         )
 
     async def get_artist_info_raw(self, singer_id: typing.Union[int, str]) -> dict:
@@ -391,10 +390,11 @@ class MiGu(api.API):
         _patch_song_info(*_songs)
         songs = _resolve(*_songs)
         return api.Album(
+            album_id=album['albumId'],
             name=album['title'].strip(),
             pic_url=_get_pic_url(album['imgItems']),
             count=len(songs),
-            songs=songs
+            songs=songs,
         )
 
     async def get_album_raw(self, album_id: typing.Union[int, str]) -> dict:
@@ -433,10 +433,11 @@ class MiGu(api.API):
         _patch_song_info(*_songs)
         songs = _resolve(*_songs)
         return api.Playlist(
+            playlist_id=playlist['musicListId'],
             name=playlist['title'].strip(),
             pic_url=playlist['imgItem']['img'],
             count=len(songs),
-            songs=songs
+            songs=songs,
         )
 
     async def get_playlist_raw(self, playlist_id: typing.Union[int, str]) -> dict:
@@ -469,28 +470,3 @@ class MiGu(api.API):
             'headers': headers,
         })
         return await self._session.request(method, url, **kwargs)
-
-
-async def search_songs(keyword: str) -> api.SearchSongsResult:
-    async with MiGu() as client:
-        return await client.search_songs(keyword)
-
-
-async def get_song(copyright_id: typing.Union[int, str]) -> api.Song:
-    async with MiGu() as client:
-        return await client.get_song(copyright_id)
-
-
-async def get_artist(singer_id: typing.Union[int, str]) -> api.Artist:
-    async with MiGu() as client:
-        return await client.get_artist(singer_id)
-
-
-async def get_album(album_id: typing.Union[int, str]) -> api.Album:
-    async with MiGu() as client:
-        return await client.get_album(album_id)
-
-
-async def get_playlist(playlist_id: typing.Union[int, str]) -> api.Playlist:
-    async with MiGu() as client:
-        return await client.get_playlist(playlist_id)

@@ -12,15 +12,6 @@ from mxget import (
     exceptions,
 )
 
-__all__ = [
-    'search_songs',
-    'get_song',
-    'get_artist',
-    'get_album',
-    'get_playlist',
-    'get_song_lyric',
-]
-
 _API_SEARCH = "https://acs.m.xiami.com/h5/mtop.alimusic.search.searchservice.searchsongs" \
               "/1.0/?appKey=23649156"
 _API_GET_SONG_DETAIL = "https://acs.m.xiami.com/h5/mtop.alimusic.music.songservice.getsongdetail" \
@@ -85,12 +76,13 @@ def _song_url(listen_files: typing.List[dict]) -> typing.Optional[str]:
 def _resolve(*songs: dict) -> typing.List[api.Song]:
     return [
         api.Song(
+            song_id=song['songId'],
             name=song['songName'].strip(),
             artist=song['singers'].replace(' / ', '/').strip(),
             album=song.get('albumName', '').strip(),
             pic_url=song.get('albumLogo'),
             lyric=song.get('lyric'),
-            url=_song_url(song['listenFiles'])
+            url=_song_url(song['listenFiles']),
         ) for song in songs
     ]
 
@@ -112,8 +104,8 @@ class XiaMi(api.API):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.close()
 
-    def platform(self) -> api.Platform:
-        return api.Platform.XiaMi
+    def platform_id(self) -> api.PlatformId:
+        return api.PlatformId.XiaMi
 
     async def _get_token(self, url: str) -> str:
         xm_tk = self._session.cookie_jar.filter_cookies(yarl.URL(url)).get('_m_h5_tk')
@@ -294,10 +286,11 @@ class XiaMi(api.API):
         await self._patch_song_lyric(*_songs)
         songs = _resolve(*_songs)
         return api.Artist(
+            artist_id=artist['artistId'],
             name=artist['artistName'].strip(),
             pic_url=artist.get('artistLogo', ''),
             count=len(songs),
-            songs=songs
+            songs=songs,
         )
 
     async def get_artist_info_raw(self, artist_id: typing.Union[int, str]) -> dict:
@@ -369,10 +362,11 @@ class XiaMi(api.API):
         await self._patch_song_lyric(*_songs)
         songs = _resolve(*_songs)
         return api.Album(
+            album_id=album['albumId'],
             name=album['albumName'].strip(),
             pic_url=album.get('albumLogo', ''),
             count=len(songs),
-            songs=songs
+            songs=songs,
         )
 
     async def get_album_raw(self, album_id: typing.Union[int, str]) -> dict:
@@ -435,10 +429,11 @@ class XiaMi(api.API):
         await self._patch_song_lyric(*tracks)
         songs = _resolve(*tracks)
         return api.Playlist(
+            playlist_id=playlist['listId'],
             name=playlist['collectName'].strip(),
             pic_url=playlist.get('collectLogo', ''),
             count=len(songs),
-            songs=songs
+            songs=songs,
         )
 
     async def get_playlist_detail_raw(self, playlist_id: typing.Union[int, str],
@@ -506,33 +501,3 @@ class XiaMi(api.API):
         })
 
         return await self._session.request(method, url, **kwargs)
-
-
-async def search_songs(keyword: str) -> api.SearchSongsResult:
-    async with XiaMi() as client:
-        return await client.search_songs(keyword)
-
-
-async def get_song(song_id: typing.Union[int, str]) -> api.Song:
-    async with XiaMi() as client:
-        return await client.get_song(song_id)
-
-
-async def get_artist(artist_id: typing.Union[int, str]) -> api.Artist:
-    async with XiaMi() as client:
-        return await client.get_artist(artist_id)
-
-
-async def get_album(album_id: typing.Union[int, str]) -> api.Album:
-    async with XiaMi() as client:
-        return await client.get_album(album_id)
-
-
-async def get_playlist(playlist_id: typing.Union[int, str]) -> api.Playlist:
-    async with XiaMi() as client:
-        return await client.get_playlist(playlist_id)
-
-
-async def get_song_lyric(song_id: typing.Union[int, str]) -> typing.Optional[str]:
-    async with XiaMi() as client:
-        return await client.get_song_lyric(song_id)

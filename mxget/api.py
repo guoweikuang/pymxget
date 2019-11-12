@@ -9,7 +9,7 @@ USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' \
              'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'
 
 
-class Platform(enum.IntEnum):
+class PlatformId(enum.IntEnum):
     NetEase = 1000
     QQ = 1001
     MiGu = 1002
@@ -58,8 +58,9 @@ class SearchSongsResult:
 
 
 class Song:
-    def __init__(self, name: str, artist: str, album: str = '',
+    def __init__(self, song_id: typing.Union[int, str], name: str, artist: str, album: str = '',
                  pic_url: str = None, lyric: str = None, url: str = None):
+        self.id = song_id
         self.name = name
         self.artist = artist
         self.album = album
@@ -70,6 +71,7 @@ class Song:
 
     def serialize(self):
         data = {
+            'id': self.id,
             'name': self.name,
             'artist': self.artist,
             'album': self.album,
@@ -87,9 +89,11 @@ class Song:
 
 
 class Artist:
-    def __init__(self, name: str, pic_url: str = '', count: int = 0, songs: typing.List[Song] = None):
+    def __init__(self, artist_id: typing.Union[int, str], name: str, pic_url: str = '', count: int = 0,
+                 songs: typing.List[Song] = None):
         if songs is None:
             songs = []
+        self.id = artist_id
         self.name = name
         self.pic_url = pic_url
         self.count = count
@@ -97,6 +101,7 @@ class Artist:
 
     def serialize(self):
         return {
+            'id': self.id,
             'name': self.name,
             'count': self.count,
             'pic_url': self.pic_url,
@@ -108,9 +113,11 @@ class Artist:
 
 
 class Album:
-    def __init__(self, name: str, pic_url: str = '', count: int = 0, songs: typing.List[Song] = None):
+    def __init__(self, album_id: typing.Union[int, str], name: str, pic_url: str = '', count: int = 0,
+                 songs: typing.List[Song] = None):
         if songs is None:
             songs = []
+        self.id = album_id
         self.name = name
         self.pic_url = pic_url
         self.count = count
@@ -118,6 +125,7 @@ class Album:
 
     def serialize(self):
         return {
+            'id': self.id,
             'name': self.name,
             'count': self.count,
             'pic_url': self.pic_url,
@@ -129,9 +137,11 @@ class Album:
 
 
 class Playlist:
-    def __init__(self, name: str, pic_url: str = '', count: int = 0, songs: typing.List[Song] = None):
+    def __init__(self, playlist_id: typing.Union[int, str], name: str, pic_url: str = '', count: int = 0,
+                 songs: typing.List[Song] = None):
         if songs is None:
             songs = []
+        self.id = playlist_id
         self.name = name
         self.pic_url = pic_url
         self.count = count
@@ -139,6 +149,7 @@ class Playlist:
 
     def serialize(self):
         return {
+            'id': self.id,
             'name': self.name,
             'count': self.count,
             'pic_url': self.pic_url,
@@ -159,7 +170,7 @@ class API(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def platform(self) -> Platform:
+    def platform_id(self) -> PlatformId:
         """平台标识"""
 
     @abc.abstractmethod

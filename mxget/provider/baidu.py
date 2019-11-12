@@ -14,14 +14,6 @@ from mxget import (
     exceptions,
 )
 
-__all__ = [
-    'search_songs',
-    'get_song',
-    'get_artist',
-    'get_album',
-    'get_playlist',
-]
-
 _API_SEARCH = "http://musicapi.qianqian.com/v1/restserver/ting?method=baidu.ting.search.merge" \
               "&from=android&version=8.1.4.0&format=json&type=-1&isNew=1"
 _API_GET_SONG = "http://musicapi.qianqian.com/v1/restserver/ting?method=baidu.ting.song.getInfos" \
@@ -84,10 +76,11 @@ def _song_url(urls: typing.List[dict]) -> typing.Optional[str]:
 def _resolve(*songs: dict) -> typing.List[api.Song]:
     return [
         api.Song(
+            song_id=song['song_id'],
             name=song['title'].strip(),
             artist=song['author'].replace(',', '/').strip(),
             album=song.get('album_title', '').strip(),
-            pic_url=song.get('pic_big', '').split('@')[0],
+            pic_url=song.get('pic_big', '').split('@', 1)[0],
             lyric=song.get('lyric'),
             url=song.get('url'),
         ) for song in songs
@@ -111,8 +104,8 @@ class BaiDu(api.API):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.close()
 
-    def platform(self) -> api.Platform:
-        return api.Platform.BaiDu
+    def platform_id(self) -> api.PlatformId:
+        return api.PlatformId.BaiDu
 
     async def search_songs(self, keyword: str) -> api.SearchSongsResult:
         resp = await self.search_songs_raw(keyword)
@@ -241,10 +234,11 @@ class BaiDu(api.API):
         await self._patch_song_lyric(*_songs)
         songs = _resolve(*_songs)
         return api.Artist(
+            artist_id=artist['ting_uid'],
             name=artist['name'].strip(),
-            pic_url=artist.get('avatar_big', '').split('@')[0],
+            pic_url=artist.get('avatar_big', '').split('@', 1)[0],
             count=len(songs),
-            songs=songs
+            songs=songs,
         )
 
     async def get_artist_raw(self, ting_uid: typing.Union[int, str],
@@ -285,10 +279,11 @@ class BaiDu(api.API):
         await self._patch_song_lyric(*_songs)
         songs = _resolve(*_songs)
         return api.Album(
+            album_id=album['album_id'],
             name=album['title'].strip(),
-            pic_url=album.get('pic_big', '').split('@')[0],
+            pic_url=album.get('pic_big', '').split('@', 1)[0],
             count=len(songs),
-            songs=songs
+            songs=songs,
         )
 
     async def get_album_raw(self, album_id: typing.Union[int, str]) -> dict:
@@ -326,10 +321,11 @@ class BaiDu(api.API):
         await self._patch_song_lyric(*_songs)
         songs = _resolve(*_songs)
         return api.Playlist(
+            playlist_id=playlist['list_id'],
             name=playlist['list_title'].strip(),
             pic_url=playlist.get('list_pic', ''),
             count=len(songs),
-            songs=songs
+            songs=songs,
         )
 
     async def get_playlist_raw(self, playlist_id: typing.Union[int, str]) -> dict:
@@ -364,28 +360,3 @@ class BaiDu(api.API):
         })
 
         return await self._session.request(method, url, **kwargs)
-
-
-async def search_songs(keyword: str) -> api.SearchSongsResult:
-    async with BaiDu() as client:
-        return await client.search_songs(keyword)
-
-
-async def get_song(song_id: typing.Union[int, str]) -> api.Song:
-    async with BaiDu() as client:
-        return await client.get_song(song_id)
-
-
-async def get_artist(artist_id: typing.Union[int, str]) -> api.Artist:
-    async with BaiDu() as client:
-        return await client.get_artist(artist_id)
-
-
-async def get_album(album_id: typing.Union[int, str]) -> api.Album:
-    async with BaiDu() as client:
-        return await client.get_album(album_id)
-
-
-async def get_playlist(playlist_id: typing.Union[int, str]) -> api.Playlist:
-    async with BaiDu() as client:
-        return await client.get_playlist(playlist_id)

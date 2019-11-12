@@ -9,16 +9,6 @@ from mxget import (
     exceptions,
 )
 
-__all__ = [
-    'search_songs',
-    'get_song',
-    'get_artist',
-    'get_album',
-    'get_playlist',
-    'get_song_url',
-    'get_song_lyric',
-]
-
 _API_SEARCH = 'https://c.y.qq.com/soso/fcgi-bin/client_search_cp?format=json&platform=yqq&new_json=1'
 _API_GET_SONG = 'https://c.y.qq.com/v8/fcg-bin/fcg_play_single_song.fcg?format=json&platform=yqq'
 _API_GET_SONG_URL = 'http://c.y.qq.com/base/fcgi-bin/fcg_music_express_mobile3.fcg?' \
@@ -37,6 +27,7 @@ _ALBUM_PIC_URL = 'https://y.gtimg.cn/music/photo_new/T002R800x800M000{album_mid}
 def _resolve(*songs: dict) -> typing.List[api.Song]:
     return [
         api.Song(
+            song_id=song['mid'],
             name=song['title'].strip(),
             artist='/'.join([s['name'].strip() for s in song['singer']]),
             album=song['album']['name'].strip(),
@@ -64,8 +55,8 @@ class QQ(api.API):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.close()
 
-    def platform(self) -> api.Platform:
-        return api.Platform.QQ
+    def platform_id(self) -> api.PlatformId:
+        return api.PlatformId.QQ
 
     async def search_songs(self, keyword: str) -> api.SearchSongsResult:
         resp = await self.search_songs_raw(keyword)
@@ -235,10 +226,11 @@ class QQ(api.API):
         await self._patch_song_lyric(*_songs)
         songs = _resolve(*_songs)
         return api.Artist(
+            artist_id=artist['singer_mid'],
             name=artist['singer_name'].strip(),
             pic_url=_ARTIST_PIC_URL.format(singer_mid=artist['singer_mid']),
             count=len(songs),
-            songs=songs
+            songs=songs,
         )
 
     async def get_artist_raw(self, singer_mid: str, page: int = 1, page_size: int = 50) -> dict:
@@ -277,10 +269,11 @@ class QQ(api.API):
         await self._patch_song_lyric(*_songs)
         songs = _resolve(*_songs)
         return api.Album(
+            album_id=album['Falbum_mid'],
             name=album['Falbum_name'].strip(),
             pic_url=_ALBUM_PIC_URL.format(album_mid=album['Falbum_mid']),
             count=len(songs),
-            songs=songs
+            songs=songs,
         )
 
     async def get_album_raw(self, album_mid: str) -> dict:
@@ -317,10 +310,11 @@ class QQ(api.API):
         await self._patch_song_lyric(*_songs)
         songs = _resolve(*_songs)
         return api.Playlist(
+            playlist_id=playlist['disstid'],
             name=playlist['dissname'],
             pic_url=playlist.get('dir_pic_url2', ''),
             count=len(songs),
-            songs=songs
+            songs=songs,
         )
 
     async def get_playlist_raw(self, playlist_id: typing.Union[int, str]) -> dict:
@@ -352,38 +346,3 @@ class QQ(api.API):
             'headers': headers,
         })
         return await self._session.request(method, url, **kwargs)
-
-
-async def search_songs(keyword: str) -> api.SearchSongsResult:
-    async with QQ() as client:
-        return await client.search_songs(keyword)
-
-
-async def get_song(song_mid: str) -> api.Song:
-    async with QQ() as client:
-        return await client.get_song(song_mid)
-
-
-async def get_artist(singer_mid: str) -> api.Artist:
-    async with QQ() as client:
-        return await client.get_artist(singer_mid)
-
-
-async def get_album(album_mid: str) -> api.Album:
-    async with QQ() as client:
-        return await client.get_album(album_mid)
-
-
-async def get_playlist(playlist_id: typing.Union[int, str]) -> api.Playlist:
-    async with QQ() as client:
-        return await client.get_playlist(playlist_id)
-
-
-async def get_song_url(song_mid: str, media_mid: str) -> typing.Optional[str]:
-    async with QQ() as client:
-        return await client.get_song_url(song_mid, media_mid)
-
-
-async def get_song_lyric(song_mid: str) -> typing.Optional[str]:
-    async with QQ() as client:
-        return await client.get_song_lyric(song_mid)

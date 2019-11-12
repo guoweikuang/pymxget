@@ -11,16 +11,6 @@ from mxget import (
     exceptions,
 )
 
-__all__ = [
-    'search_songs',
-    'get_song',
-    'get_artist',
-    'get_album',
-    'get_playlist',
-    'get_song_url',
-    'get_song_lyric',
-]
-
 _API_SEARCH = 'http://mobilecdn.kugou.com/api/v3/search/song'
 _API_GET_SONG = 'http://m.kugou.com/app/i/getSongInfo.php?cmd=playInfo'
 _API_GET_SONG_URL = 'http://trackercdn.kugou.com/i/v2/?pid=2&behavior=play&cmd=25'
@@ -36,6 +26,7 @@ _API_GET_PLAYLIST_SONGS = 'http://mobilecdn.kugou.com/api/v3/special/song'
 def _resolve(*songs: dict) -> typing.List[api.Song]:
     return [
         api.Song(
+            song_id=song['hash'],
             name=song['songName'].strip(),
             artist=song['choricSinger'].replace('、', '/').strip(),
             album=song.get('album_name', '').strip(),
@@ -63,8 +54,8 @@ class KuGou(api.API):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.close()
 
-    def platform(self) -> api.Platform:
-        return api.Platform.KuGou
+    def platform_id(self) -> api.PlatformId:
+        return api.PlatformId.KuGou
 
     async def search_songs(self, keyword: str) -> api.SearchSongsResult:
         resp = await self.search_songs_raw(keyword)
@@ -253,10 +244,11 @@ class KuGou(api.API):
         await self._patch_song_lyric(*_songs)
         songs = _resolve(*_songs)
         return api.Artist(
+            artist_id=artist_info['data']['singerid'],
             name=artist_info['data']['singername'].strip(),
             pic_url=artist_info['data']['imgurl'].replace('{size}', '480'),
             count=len(songs),
-            songs=songs
+            songs=songs,
         )
 
     async def get_artist_info_raw(self, singer_id: typing.Union[int, str]) -> dict:
@@ -317,10 +309,11 @@ class KuGou(api.API):
         await self._patch_song_lyric(*_songs)
         songs = _resolve(*_songs)
         return api.Album(
+            album_id=album_info['data']['albumid'],
             name=album_info['data']['albumname'].strip(),
             pic_url=album_info['data']['imgurl'].replace('{size}', '480'),
             count=len(songs),
-            songs=songs
+            songs=songs,
         )
 
     async def get_album_info_raw(self, album_id: typing.Union[int, str]) -> dict:
@@ -381,10 +374,11 @@ class KuGou(api.API):
         await self._patch_song_lyric(*_songs)
         songs = _resolve(*_songs)
         return api.Playlist(
+            playlist_id=playlist_info['data']['specialid'],
             name=playlist_info['data']['specialname'].strip(),
             pic_url=playlist_info['data']['imgurl'].replace('{size}', '480'),
             count=len(songs),
-            songs=songs
+            songs=songs,
         )
 
     async def get_playlist_info_raw(self, special_id: typing.Union[int, str]) -> dict:
@@ -438,38 +432,3 @@ class KuGou(api.API):
             'headers': headers,
         })
         return await self._session.request(method, url, **kwargs)
-
-
-async def search_songs(keyword: str) -> api.SearchSongsResult:
-    async with KuGou() as client:
-        return await client.search_songs(keyword)
-
-
-async def get_song(file_hash: str) -> api.Song:
-    async with KuGou() as client:
-        return await client.get_song(file_hash)
-
-
-async def get_artist(singer_id: typing.Union[int, str]) -> api.Artist:
-    async with KuGou() as client:
-        return await client.get_artist(singer_id)
-
-
-async def get_album(album_id: typing.Union[int, str]) -> api.Album:
-    async with KuGou() as client:
-        return await client.get_album(album_id)
-
-
-async def get_playlist(special_id: typing.Union[int, str]) -> api.Playlist:
-    async with KuGou() as client:
-        return await client.get_playlist(special_id)
-
-
-async def get_song_url(file_hash: str) -> typing.Optional[str]:
-    async with KuGou() as client:
-        return await client.get_song_url(file_hash)
-
-
-async def get_song_lyric(file_hash: str) -> typing.Optional[str]:
-    async with KuGou() as client:
-        return await client.get_song_lyric(file_hash)

@@ -10,16 +10,6 @@ from mxget import (
     exceptions,
 )
 
-__all__ = [
-    'search_songs',
-    'get_song',
-    'get_artist',
-    'get_album',
-    'get_playlist',
-    'get_song_url',
-    'get_song_lyric',
-]
-
 _API_SEARCH = 'http://www.kuwo.cn/api/www/search/searchMusicBykeyWord'
 _API_GET_SONG = 'http://www.kuwo.cn/api/www/music/musicInfo'
 _API_GET_SONG_URL = 'http://www.kuwo.cn/url?format=mp3&response=url&type=convert_url3'
@@ -41,6 +31,7 @@ def _bit_rate(br: int) -> int:
 def _resolve(*songs: dict) -> typing.List[api.Song]:
     return [
         api.Song(
+            song_id=song['rid'],
             name=song['name'].strip(),
             artist=song['artist'].replace('&', '/').strip(),
             album=song.get('album', '').strip(),
@@ -68,8 +59,8 @@ class KuWo(api.API):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.close()
 
-    def platform(self) -> api.Platform:
-        return api.Platform.KuWo
+    def platform_id(self) -> api.PlatformId:
+        return api.PlatformId.KuWo
 
     async def search_songs(self, keyword: str) -> api.SearchSongsResult:
         resp = await self.search_songs_raw(keyword)
@@ -254,10 +245,11 @@ class KuWo(api.API):
         await self._patch_song_lyric(*_songs)
         songs = _resolve(*_songs)
         return api.Artist(
+            artist_id=artist['id'],
             name=artist['name'].strip(),
             pic_url=artist.get('pic300', ''),
             count=len(songs),
-            songs=songs
+            songs=songs,
         )
 
     async def get_artist_info_raw(self, artist_id: typing.Union[int, str]) -> dict:
@@ -317,10 +309,11 @@ class KuWo(api.API):
         await self._patch_song_lyric(*_songs)
         songs = _resolve(*_songs)
         return api.Album(
+            album_id=album['albumId'],
             name=album['album'].strip(),
             pic_url=album.get('pic', ''),
             count=len(songs),
-            songs=songs
+            songs=songs,
         )
 
     async def get_album_raw(self, album_id: typing.Union[int, str],
@@ -361,10 +354,11 @@ class KuWo(api.API):
         await self._patch_song_lyric(*_songs)
         songs = _resolve(*_songs)
         return api.Playlist(
+            playlist_id=playlist['id'],
             name=playlist['name'].strip(),
             pic_url=playlist.get('img700', ''),
             count=len(songs),
-            songs=songs
+            songs=songs,
         )
 
     async def get_playlist_raw(self, playlist_id: typing.Union[int, str],
@@ -412,38 +406,3 @@ class KuWo(api.API):
         })
 
         return await self._session.request(method, url, **kwargs)
-
-
-async def search_songs(keyword: str) -> api.SearchSongsResult:
-    async with KuWo() as client:
-        return await client.search_songs(keyword)
-
-
-async def get_song(mid: typing.Union[int, str]) -> api.Song:
-    async with KuWo() as client:
-        return await client.get_song(mid)
-
-
-async def get_artist(artist_id: typing.Union[int, str]) -> api.Artist:
-    async with KuWo() as client:
-        return await client.get_artist(artist_id)
-
-
-async def get_album(album_id: typing.Union[int, str]) -> api.Album:
-    async with KuWo() as client:
-        return await client.get_album(album_id)
-
-
-async def get_playlist(playlist_id: typing.Union[int, str]) -> api.Playlist:
-    async with KuWo() as client:
-        return await client.get_playlist(playlist_id)
-
-
-async def get_song_url(mid: typing.Union[int, str], br: int = 128) -> typing.Optional[str]:
-    async with KuWo() as client:
-        return await client.get_song_url(mid, br)
-
-
-async def get_song_lyric(mid: typing.Union[int, str]) -> typing.Optional[str]:
-    async with KuWo() as client:
-        return await client.get_song_lyric(mid)

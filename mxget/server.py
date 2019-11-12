@@ -17,23 +17,31 @@ from mxget.provider import (
 routes = web.RouteTableDef()
 
 
+def success_response(client: api.API, data: dict):
+    return web.json_response(data={
+        'code': 200,
+        'data': data,
+        'platform': client.platform_id(),
+    }, status=200)
+
+
+def error_response(client: api.API, e: exceptions.ClientError):
+    return web.json_response(data={
+        'code': 500,
+        'msg': str(e),
+        'platform': client.platform_id(),
+    }, status=500)
+
+
 async def search_songs(client: api.API, keyword: str):
     try:
         resp = await client.search_songs(keyword)
     except exceptions.ClientError as e:
         await client.close()
-        return web.json_response(data={
-            'code': 500,
-            'msg': str(e),
-            'platform': client.platform(),
-        }, status=500)
+        return error_response(client, e)
 
     await client.close()
-    return web.json_response(data={
-        'code': 200,
-        'data': resp.serialize(),
-        'platform': client.platform(),
-    }, status=200)
+    return success_response(client, resp.serialize())
 
 
 async def get_song(client: api.API, song_id: str):
@@ -41,18 +49,10 @@ async def get_song(client: api.API, song_id: str):
         resp = await client.get_song(song_id)
     except exceptions.ClientError as e:
         await client.close()
-        return web.json_response(data={
-            'code': 500,
-            'msg': str(e),
-            'platform': client.platform(),
-        }, status=500)
+        return error_response(client, e)
 
     await client.close()
-    return web.json_response(data={
-        'code': 200,
-        'data': resp.serialize(),
-        'platform': client.platform(),
-    }, status=200)
+    return success_response(client, resp.serialize())
 
 
 async def get_artist(client: api.API, artist_id: str):
@@ -60,18 +60,10 @@ async def get_artist(client: api.API, artist_id: str):
         resp = await client.get_artist(artist_id)
     except exceptions.ClientError as e:
         await client.close()
-        return web.json_response(data={
-            'code': 500,
-            'msg': str(e),
-            'platform': client.platform(),
-        }, status=500)
+        return error_response(client, e)
 
     await client.close()
-    return web.json_response(data={
-        'code': 200,
-        'data': resp.serialize(),
-        'platform': client.platform(),
-    }, status=200)
+    return success_response(client, resp.serialize())
 
 
 async def get_album(client: api.API, album_id: str):
@@ -79,18 +71,10 @@ async def get_album(client: api.API, album_id: str):
         resp = await client.get_album(album_id)
     except exceptions.ClientError as e:
         await client.close()
-        return web.json_response(data={
-            'code': 500,
-            'msg': str(e),
-            'platform': client.platform(),
-        }, status=500)
+        return error_response(client, e)
 
     await client.close()
-    return web.json_response(data={
-        'code': 200,
-        'data': resp.serialize(),
-        'platform': client.platform(),
-    }, status=200)
+    return success_response(client, resp.serialize())
 
 
 async def get_playlist(client: api.API, playlist_id: str):
@@ -98,18 +82,10 @@ async def get_playlist(client: api.API, playlist_id: str):
         resp = await client.get_playlist(playlist_id)
     except exceptions.ClientError as e:
         await client.close()
-        return web.json_response(data={
-            'code': 500,
-            'msg': str(e),
-            'platform': client.platform(),
-        }, status=500)
+        return error_response(client, e)
 
     await client.close()
-    return web.json_response(data={
-        'code': 200,
-        'data': resp.serialize(),
-        'platform': client.platform(),
-    }, status=200)
+    return success_response(client, resp.serialize())
 
 
 @routes.get('/api/netease/search/{keyword}')

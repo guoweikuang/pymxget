@@ -15,16 +15,6 @@ from mxget import (
     exceptions,
 )
 
-__all__ = [
-    'search_songs',
-    'get_song',
-    'get_artist',
-    'get_album',
-    'get_playlist',
-    'get_song_url',
-    'get_song_lyric',
-]
-
 _PRESET_KEY = b'0CoJUm6Qyw8W8jud'
 _IV = b'0102030405060708'
 _API_LINUX_KEY = b'rFgB&h#%2?^eDg:Q'
@@ -105,6 +95,7 @@ def _bit_rate(br: int) -> int:
 def _resolve(*songs: dict) -> typing.List[api.Song]:
     return [
         api.Song(
+            song_id=song['id'],
             name=song['name'].strip(),
             artist='/'.join([a['name'].strip() for a in song['ar']]),
             album=song['al']['name'].strip(),
@@ -133,8 +124,8 @@ class NetEase(api.API):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.close()
 
-    def platform(self) -> api.Platform:
-        return api.Platform.NetEase
+    def platform_id(self) -> api.PlatformId:
+        return api.PlatformId.NetEase
 
     async def search_songs(self, keyword: str) -> api.SearchSongsResult:
         resp = await self.search_songs_raw(keyword)
@@ -311,6 +302,7 @@ class NetEase(api.API):
         await self._patch_song_lyric(*_songs)
         songs = _resolve(*_songs)
         return api.Artist(
+            artist_id=resp['artist']['id'],
             name=resp['artist']['name'].strip(),
             pic_url=resp['artist']['picUrl'],
             count=len(songs),
@@ -346,6 +338,7 @@ class NetEase(api.API):
         await self._patch_song_lyric(*_songs)
         songs = _resolve(*_songs)
         return api.Album(
+            album_id=resp['album']['id'],
             name=resp['album']['name'].strip(),
             pic_url=resp['album']['picUrl'],
             count=len(songs),
@@ -400,6 +393,7 @@ class NetEase(api.API):
         await self._patch_song_lyric(*tracks)
         songs = _resolve(*tracks)
         return api.Playlist(
+            playlist_id=resp['playlist']['id'],
             name=resp['playlist']['name'].strip(),
             pic_url=resp['playlist']['coverImgUrl'],
             count=len(songs),
@@ -443,38 +437,3 @@ class NetEase(api.API):
             })
 
         return await self._session.request(method, url, **kwargs)
-
-
-async def search_songs(keyword: str) -> api.SearchSongsResult:
-    async with NetEase() as client:
-        return await client.search_songs(keyword)
-
-
-async def get_song(song_id: typing.Union[int, str]) -> api.Song:
-    async with NetEase() as client:
-        return await client.get_song(song_id)
-
-
-async def get_artist(artist_id: typing.Union[int, str]) -> api.Artist:
-    async with NetEase() as client:
-        return await client.get_artist(artist_id)
-
-
-async def get_album(album_id: typing.Union[int, str]) -> api.Album:
-    async with NetEase() as client:
-        return await client.get_album(album_id)
-
-
-async def get_playlist(playlist_id: typing.Union[int, str]) -> api.Playlist:
-    async with NetEase() as client:
-        return await client.get_playlist(playlist_id)
-
-
-async def get_song_url(song_id: typing.Union[int, str], br: int = 128) -> typing.Optional[str]:
-    async with NetEase() as client:
-        return await client.get_song_url(song_id, br)
-
-
-async def get_song_lyric(song_id: typing.Union[int, str]) -> typing.Optional[str]:
-    async with NetEase() as client:
-        return await client.get_song_lyric(song_id)

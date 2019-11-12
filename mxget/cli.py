@@ -81,7 +81,7 @@ async def concurrent_download(client: api.API, save_path: str, *songs: api.Song)
     await asyncio.gather(*tasks)
 
 
-async def _save_lyric(file_path: pathlib.Path, lyric: str):
+async def _save_lyric(file_path: pathlib.Path, lyric: str) -> None:
     try:
         f = await aiofiles.open(file_path, 'w', encoding='utf-8')
         await f.write(lyric)
@@ -90,7 +90,7 @@ async def _save_lyric(file_path: pathlib.Path, lyric: str):
         pass
 
 
-async def _write_tag(client: api.API, file_path: pathlib.Path, song: api.Song):
+async def _write_tag(client: api.API, file_path: pathlib.Path, song: api.Song) -> None:
     audio = id3.ID3(file_path)
     audio.add(id3.TIT2(encoding=id3.Encoding.UTF8, text=song.name))
     audio.add(id3.TPE1(encoding=id3.Encoding.UTF8, text=song.artist))
