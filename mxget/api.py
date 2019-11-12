@@ -171,7 +171,7 @@ class API(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def platform_id(self) -> PlatformId:
-        """平台标识"""
+        """专用识别码"""
 
     @abc.abstractmethod
     async def search_songs(self, keyword: str) -> SearchSongsResult:
