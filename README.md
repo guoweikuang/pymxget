@@ -14,7 +14,7 @@ $ pip3 install -U mxget
 
 ## 使用帮助
 
-`pymxget` 的用法跟 `mxget` 一致，请参考 **[mxget](https://github.com/winterssy/mxget)** 的文档。
+`pymxget` 的用法跟 `mxget` 几乎一致，请参考 **[mxget](https://github.com/winterssy/mxget)** 的文档。
 
 ## License
 
