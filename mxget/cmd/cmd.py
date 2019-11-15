@@ -1,13 +1,11 @@
 import asyncio
 import logging
 import sys
-import typing
 
 import click
 
 import mxget
 from mxget import (
-    api,
     cli,
     conf,
     exceptions,
@@ -17,16 +15,6 @@ from mxget import (
 _CONTEXT_SETTINGS = {
     "help_option_names": ["-h", "--help"],
 }
-
-
-def _get_platform_id(platform_flag: str = None) -> typing.Optional[api.PlatformId]:
-    if platform_flag is None:
-        platform_id = conf.settings['music_platform']
-    else:
-        platform_id = conf.get_platform_id(platform_flag)
-        if platform_id is None:
-            return None
-    return platform_id
 
 
 @click.group(context_settings=_CONTEXT_SETTINGS)
@@ -39,30 +27,39 @@ please visit https://github.com/winterssy/mxget for more detail."""
     try:
         conf.settings.init()
     except exceptions.ClientError as e:
-        logging.critical("Can't initialize settings, reset to defaults: {}".format(e))
-        conf.settings.reset()
+        logging.critical("Initialize config failed, reset to defaults: {}".format(e))
+        conf.settings.save()
         sys.exit(1)
 
 
 @root.command(help='Specify the default behavior of mxget.')
-@click.option('--from', 'platform_flag', help='Specify the default music platform')
-@click.option('--cwd', help='Specify the default download directory')
-def config(platform_flag: str, cwd: str) -> None:
-    if platform_flag is None and cwd is None:
+@click.option('--from', 'platform', help='Specify the default music platform')
+@click.option('--dir', 'cwd', help='Specify the default download directory')
+@click.option('--show', is_flag=True, help='Show current settings')
+@click.option('--reset', is_flag=True, help='Reset default settings')
+def config(platform: str, cwd: str, show: bool, reset: bool) -> None:
+    ctx = click.get_current_context()
+    if not any(v for v in ctx.params.values()):
+        click.echo(ctx.get_help())
+        ctx.exit()
+
+    if show:
         print("""
-Current settings:
-    download dir -> {}
+    download dir   -> {}
     music platform -> {} [{}]
-""".format(conf.settings['download_dir'], conf.settings['music_platform'],
-           conf.get_platform_desc(conf.settings['music_platform'])), end='')
+""".format(conf.settings['dir'], conf.settings['platform'],
+           conf.get_platform_desc(conf.settings['platform'])), end='')
         return
 
-    if platform_flag is not None:
-        platform_id = conf.get_platform_id(platform_flag)
-        if platform_id is None:
-            logging.critical('Unexpected music platform: "{}"'.format(platform_flag))
+    if reset:
+        conf.settings.reset()
+        return
+
+    if platform is not None:
+        if conf.get_platform_desc(platform) is None:
+            logging.critical('Unexpected music platform: "{}"'.format(platform))
             sys.exit(1)
-        conf.settings['music_platform'] = platform_id
+        conf.settings['platform'] = platform
 
     if cwd is not None:
         try:
@@ -70,31 +67,34 @@ Current settings:
         except exceptions.ClientError as e:
             logging.critical(e)
             sys.exit(1)
-        conf.settings['download_dir'] = cwd
+        conf.settings['dir'] = cwd
 
-    conf.settings.save()
+    if platform is not None or cwd is not None:
+        conf.settings.save()
 
 
-@root.command(help='Search songs from the Internet.')
-@click.option('--from', 'platform_flag', help='Music platform')
+@root.command(help='Search songs from the specified music platform.')
+@click.option('--from', 'platform', help='Music platform')
 @click.option('--keyword', '-k', prompt=True, help='Search keyword')
-def search(platform_flag, keyword) -> None:
-    platform_id = _get_platform_id(platform_flag)
-    if platform_id is None:
-        logging.critical('Unexpected music platform: "{}"'.format(platform_flag))
+def search(platform, keyword) -> None:
+    if platform is None:
+        platform = conf.settings['platform']
+
+    client = conf.get_platform_client(platform)
+    if client is None:
+        logging.critical('Unexpected music platform: "{}"'.format(platform))
         sys.exit(1)
 
-    client = conf.get_client(platform_id)
     loop = asyncio.get_event_loop()
     try:
-        print('Search "{}" from [{}]...\n'.format(keyword, conf.get_platform_desc(platform_id)))
+        print('Search "{}" from [{}]...\n'.format(keyword, conf.get_platform_desc(platform)))
         resp = loop.run_until_complete(client.search_songs(keyword))
         for i, v in enumerate(resp.songs):
             print('[{:02d}] {} - {} - {}'.format(i + 1, v.name, v.artist, v.id))
-        if platform_flag is None:
+        if platform is None:
             print('\nCommand: mxget song --id [id]')
         else:
-            print('\nCommand: mxget song --from {} --id [id]'.format(platform_flag))
+            print('\nCommand: mxget song --from {} --id [id]'.format(platform))
     except exceptions.ClientError as e:
         logging.critical(e)
     finally:
@@ -102,22 +102,24 @@ def search(platform_flag, keyword) -> None:
 
 
 @root.command(help='Fetch and download single song via its id.')
-@click.option('--from', 'platform_flag', help='Music platform')
+@click.option('--from', 'platform', help='Music platform')
 @click.option('--id', 'song_id', prompt=True, help='Song id')
 @click.option('--tag', is_flag=True, help='Update music metadata')
 @click.option('--lyric', is_flag=True, help='Download lyric')
 @click.option('--force', is_flag=True, help='Overwrite already downloaded music')
-def song(platform_flag: str, song_id: str, **kwargs) -> None:
-    platform_id = _get_platform_id(platform_flag)
-    if platform_id is None:
-        logging.critical('Unexpected music platform: "{}"'.format(platform_flag))
+def song(platform: str, song_id: str, **kwargs) -> None:
+    if platform is None:
+        platform = conf.settings['platform']
+
+    client = conf.get_platform_client(platform)
+    if client is None:
+        logging.critical('Unexpected music platform: "{}"'.format(platform))
         sys.exit(1)
 
     conf.settings.update(kwargs)
-    client = conf.get_client(platform_id)
     loop = asyncio.get_event_loop()
     try:
-        logging.info('Fetch song [{}] from [{}]'.format(song_id, conf.get_platform_desc(platform_id)))
+        logging.info('Fetch song [{}] from [{}]'.format(song_id, conf.get_platform_desc(platform)))
         resp = loop.run_until_complete(client.get_song(song_id))
         loop.run_until_complete(cli.concurrent_download(client, '.', resp))
     except exceptions.ClientError as e:
@@ -126,24 +128,26 @@ def song(platform_flag: str, song_id: str, **kwargs) -> None:
         loop.run_until_complete(client.close())
 
 
-@root.command(help='Fetch and download artist hot songs via its id.')
-@click.option('--from', 'platform_flag', help='Music platform')
+@root.command(help="Fetch and download artist's hot songs via its id.")
+@click.option('--from', 'platform', help='Music platform')
 @click.option('--id', 'artist_id', prompt=True, help='Artist id')
 @click.option('--tag', is_flag=True, help='Update music metadata')
 @click.option('--lyric', is_flag=True, help='Download lyric')
 @click.option('--force', is_flag=True, help='Overwrite already downloaded music')
 @click.option('--limit', type=int, help='Concurrent download limit')
-def artist(platform_flag: str, artist_id: str, **kwargs) -> None:
-    platform_id = _get_platform_id(platform_flag)
-    if platform_id is None:
-        logging.critical('Unexpected music platform: "{}"'.format(platform_flag))
+def artist(platform: str, artist_id: str, **kwargs) -> None:
+    if platform is None:
+        platform = conf.settings['platform']
+
+    client = conf.get_platform_client(platform)
+    if client is None:
+        logging.critical('Unexpected music platform: "{}"'.format(platform))
         sys.exit(1)
 
     conf.settings.update(kwargs)
-    client = conf.get_client(platform_id)
     loop = asyncio.get_event_loop()
     try:
-        logging.info('Fetch artist [{}] from [{}]'.format(artist_id, conf.get_platform_desc(platform_id)))
+        logging.info('Fetch artist [{}] from [{}]'.format(artist_id, conf.get_platform_desc(platform)))
         resp = loop.run_until_complete(client.get_artist(artist_id))
         loop.run_until_complete(cli.concurrent_download(client, resp.name, *resp.songs))
     except exceptions.ClientError as e:
@@ -152,24 +156,26 @@ def artist(platform_flag: str, artist_id: str, **kwargs) -> None:
         loop.run_until_complete(client.close())
 
 
-@root.command(help='Fetch and download album songs via its id.')
-@click.option('--from', 'platform_flag', help='Music platform')
+@root.command(help="Fetch and download album's songs via its id.")
+@click.option('--from', 'platform', help='Music platform')
 @click.option('--id', 'album_id', prompt=True, help='Album id')
 @click.option('--tag', is_flag=True, help='Update music metadata')
 @click.option('--lyric', is_flag=True, help='Download lyric')
 @click.option('--force', is_flag=True, help='Overwrite already downloaded music')
 @click.option('--limit', type=int, help='Concurrent download limit')
-def album(platform_flag: str, album_id: str, **kwargs) -> None:
-    platform_id = _get_platform_id(platform_flag)
-    if platform_id is None:
-        logging.critical('Unexpected music platform: "{}"'.format(platform_flag))
+def album(platform: str, album_id: str, **kwargs) -> None:
+    if platform is None:
+        platform = conf.settings['platform']
+
+    client = conf.get_platform_client(platform)
+    if client is None:
+        logging.critical('Unexpected music platform: "{}"'.format(platform))
         sys.exit(1)
 
     conf.settings.update(kwargs)
-    client = conf.get_client(platform_id)
     loop = asyncio.get_event_loop()
     try:
-        logging.info('Fetch album [{}] from [{}]'.format(album_id, conf.get_platform_desc(platform_id)))
+        logging.info('Fetch album [{}] from [{}]'.format(album_id, conf.get_platform_desc(platform)))
         resp = loop.run_until_complete(client.get_album(album_id))
         loop.run_until_complete(cli.concurrent_download(client, resp.name, *resp.songs))
     except exceptions.ClientError as e:
@@ -178,24 +184,26 @@ def album(platform_flag: str, album_id: str, **kwargs) -> None:
         loop.run_until_complete(client.close())
 
 
-@root.command(help='Fetch and download playlist songs via its id.')
-@click.option('--from', 'platform_flag', help='Music platform')
+@root.command(help="Fetch and download playlist's songs via its id.")
+@click.option('--from', 'platform', help='Music platform')
 @click.option('--id', 'playlist_id', prompt=True, help='Playlist id')
 @click.option('--tag', is_flag=True, help='Update music metadata')
 @click.option('--lyric', is_flag=True, help='Download lyric')
 @click.option('--force', is_flag=True, help='Overwrite already downloaded music')
 @click.option('--limit', type=int, show_default=True, help='Concurrent download limit')
-def playlist(platform_flag: str, playlist_id: str, **kwargs) -> None:
-    platform_id = _get_platform_id(platform_flag)
-    if platform_id is None:
-        logging.critical('Unexpected music platform: "{}"'.format(platform_flag))
+def playlist(platform: str, playlist_id: str, **kwargs) -> None:
+    if platform is None:
+        platform = conf.settings['platform']
+
+    client = conf.get_platform_client(platform)
+    if client is None:
+        logging.critical('Unexpected music platform: "{}"'.format(platform))
         sys.exit(1)
 
     conf.settings.update(kwargs)
-    client = conf.get_client(platform_id)
     loop = asyncio.get_event_loop()
     try:
-        logging.info('Fetch playlist [{}] from [{}]'.format(playlist_id, conf.get_platform_desc(platform_id)))
+        logging.info('Fetch playlist [{}] from [{}]'.format(playlist_id, conf.get_platform_desc(platform)))
         resp = loop.run_until_complete(client.get_playlist(playlist_id))
         loop.run_until_complete(cli.concurrent_download(client, resp.name, *resp.songs))
     except exceptions.ClientError as e:
