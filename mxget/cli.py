@@ -27,7 +27,7 @@ async def concurrent_download(client: api.API, save_path: str, *songs: api.Song)
     if limit > 32:
         limit = 32
 
-    save_path = pathlib.Path(conf.settings['download_dir']).joinpath(
+    save_path = pathlib.Path(conf.settings['dir']).joinpath(
         utils.trim_invalid_file_path_chars(save_path))
 
     if not save_path.is_dir():
