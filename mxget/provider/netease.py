@@ -407,7 +407,7 @@ class NetEase(api.API):
         }
 
         try:
-            _resp = await self.request('POST', _API_GET_PLAYLIST, data=_weapi(data))
+            _resp = await self.request('POST', _API_GET_PLAYLIST, data=_weapi(data), ssl=False)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             raise exceptions.RequestError('get playlist: {}'.format(e))
 
